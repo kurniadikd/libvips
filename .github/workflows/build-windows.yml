@@ -65,56 +65,59 @@ jobs:
       - name: Add vvdec and vvenc MXE recipes
         run: |
           cd build-win64-mxe
-          
-          # Create vvdec.mk
-          cat << 'EOF' > build/vvdec.mk
-PKG             := vvdec
-$(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvdec
-$(PKG)_DESCR    := Fraunhofer HHI VVC Decoder
-$(PKG)_IGNORE   :=
-$(PKG)_VERSION  := 2.3.0
-$(PKG)_CHECKSUM := VVDEC_CHECKSUM_PLACEHOLDER
-$(PKG)_PATCHES  :=
-$(PKG)_SUBDIR   := vvdec-$($(PKG)_VERSION)
-$(PKG)_FILE     := vvdec-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := https://github.com/fraunhoferhhi/vvdec/archive/refs/tags/v$($(PKG)_VERSION).tar.gz
-$(PKG)_DEPS     := cc
+          python3 - << 'EOF'
+          import textwrap
 
-define $(PKG)_BUILD
-    cd '$(BUILD_DIR)' && $(TARGET)-cmake \
-        -DBUILD_SHARED_LIBS=OFF \
-        -DCONFIG_PIC=ON \
-        '$(SOURCE_DIR)'
-    $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
-    $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
-endef
-EOF
-          sed -i "s|VVDEC_CHECKSUM_PLACEHOLDER|${{ steps.checksums.outputs.vvdec_checksum }}|" build/vvdec.mk
-          
-          # Create vvenc.mk
-          cat << 'EOF' > build/vvenc.mk
-PKG             := vvenc
-$(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvenc
-$(PKG)_DESCR    := Fraunhofer HHI VVC Encoder
-$(PKG)_IGNORE   :=
-$(PKG)_VERSION  := 1.13.0
-$(PKG)_CHECKSUM := VVENC_CHECKSUM_PLACEHOLDER
-$(PKG)_PATCHES  :=
-$(PKG)_SUBDIR   := vvenc-$($(PKG)_VERSION)
-$(PKG)_FILE     := vvenc-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v$($(PKG)_VERSION).tar.gz
-$(PKG)_DEPS     := cc
+          vvdec_content = textwrap.dedent("""\
+              PKG             := vvdec
+              $(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvdec
+              $(PKG)_DESCR    := Fraunhofer HHI VVC Decoder
+              $(PKG)_IGNORE   :=
+              $(PKG)_VERSION  := 2.3.0
+              $(PKG)_CHECKSUM := ${{ steps.checksums.outputs.vvdec_checksum }}
+              $(PKG)_PATCHES  :=
+              $(PKG)_SUBDIR   := vvdec-$($(PKG)_VERSION)
+              $(PKG)_FILE     := vvdec-$($(PKG)_VERSION).tar.gz
+              $(PKG)_URL      := https://github.com/fraunhoferhhi/vvdec/archive/refs/tags/v$($(PKG)_VERSION).tar.gz
+              $(PKG)_DEPS     := cc
 
-define $(PKG)_BUILD
-    cd '$(BUILD_DIR)' && $(TARGET)-cmake \
-        -DBUILD_SHARED_LIBS=OFF \
-        -DCONFIG_PIC=ON \
-        '$(SOURCE_DIR)'
-    $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
-    $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
-endef
-EOF
-          sed -i "s|VVENC_CHECKSUM_PLACEHOLDER|${{ steps.checksums.outputs.vvenc_checksum }}|" build/vvenc.mk
+              define $(PKG)_BUILD
+                  cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
+                      -DBUILD_SHARED_LIBS=OFF \\
+                      -DCONFIG_PIC=ON \\
+                      '$(SOURCE_DIR)'
+                  $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
+                  $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
+              endef
+          """)
+          with open("build/vvdec.mk", "w") as f:
+              f.write(vvdec_content)
+
+          vvenc_content = textwrap.dedent("""\
+              PKG             := vvenc
+              $(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvenc
+              $(PKG)_DESCR    := Fraunhofer HHI VVC Encoder
+              $(PKG)_IGNORE   :=
+              $(PKG)_VERSION  := 1.13.0
+              $(PKG)_CHECKSUM := ${{ steps.checksums.outputs.vvenc_checksum }}
+              $(PKG)_PATCHES  :=
+              $(PKG)_SUBDIR   := vvenc-$($(PKG)_VERSION)
+              $(PKG)_FILE     := vvenc-$($(PKG)_VERSION).tar.gz
+              $(PKG)_URL      := https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v$($(PKG)_VERSION).tar.gz
+              $(PKG)_DEPS     := cc
+
+              define $(PKG)_BUILD
+                  cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
+                      -DBUILD_SHARED_LIBS=OFF \\
+                      -DCONFIG_PIC=ON \\
+                      '$(SOURCE_DIR)'
+                  $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
+                  $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
+              endef
+          """)
+          with open("build/vvenc.mk", "w") as f:
+              f.write(vvenc_content)
+          EOF
 
       - name: Patch libheif recipe for VVC support
         run: |
