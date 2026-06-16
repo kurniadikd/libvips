@@ -55,9 +55,9 @@ jobs:
           # Replace fields in build/aom.mk
           sed -i "s|\$(PKG)_VERSION  :=.*|\$(PKG)_VERSION  := ${AVM_VERSION}|" build/aom.mk
           sed -i "s|\$(PKG)_CHECKSUM :=.*|\$(PKG)_CHECKSUM := ${AVM_CHECKSUM}|" build/aom.mk
-          sed -i "s|\$(PKG)_SUBDIR   :=.*|\$(PKG)_SUBDIR   := avm-research-v\$([\$(PKG)_VERSION])|" build/aom.mk
-          sed -i "s|\$(PKG)_FILE     :=.*|\$(PKG)_FILE     := avm-research-v\$([\$(PKG)_VERSION]).tar.gz|" build/aom.mk
-          sed -i "s|\$(PKG)_URL      :=.*|\$(PKG)_URL      := https://github.com/AOMediaCodec/avm/archive/refs/tags/research-v\$([\$(PKG)_VERSION]).tar.gz|" build/aom.mk
+          sed -i "s|\$(PKG)_SUBDIR   :=.*|\$(PKG)_SUBDIR   := avm-research-v\$(\$(PKG)_VERSION)|" build/aom.mk
+          sed -i "s|\$(PKG)_FILE     :=.*|\$(PKG)_FILE     := avm-research-v\$(\$(PKG)_VERSION).tar.gz|" build/aom.mk
+          sed -i "s|\$(PKG)_URL      :=.*|\$(PKG)_URL      := https://github.com/AOMediaCodec/avm/archive/refs/tags/research-v\$(\$(PKG)_VERSION).tar.gz|" build/aom.mk
           
           # Disable standard patches as they will fail on AVM
           sed -i "s|\$(PKG)_PATCHES  :=.*|\$(PKG)_PATCHES  :=|" build/aom.mk
