@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl sed jq
+          sudo apt-get install -y curl sed jq python3
 
       - name: Clone libvips/build-win64-mxe
         run: |
@@ -23,19 +23,34 @@ jobs:
           cd build-win64-mxe
           git checkout master
 
+      - name: Fetch and calculate checksums for dependencies
+        id: checksums
+        run: |
+          # AVM (AV2)
+          AVM_TAG="research-v9.0.0"
+          AVM_TARBALL_URL="https://github.com/AOMediaCodec/avm/archive/refs/tags/${AVM_TAG}.tar.gz"
+          curl -L -o avm.tar.gz "$AVM_TARBALL_URL"
+          AVM_CHECKSUM=$(sha256sum avm.tar.gz | awk '{print $1}')
+          echo "avm_checksum=${AVM_CHECKSUM}" >> $GITHUB_OUTPUT
+          
+          # vvdec (VVC Decoder)
+          VVDEC_VERSION="2.3.0"
+          curl -L -o vvdec.tar.gz "https://github.com/fraunhoferhhi/vvdec/archive/refs/tags/v${VVDEC_VERSION}.tar.gz"
+          VVDEC_CHECKSUM=$(sha256sum vvdec.tar.gz | awk '{print $1}')
+          echo "vvdec_checksum=${VVDEC_CHECKSUM}" >> $GITHUB_OUTPUT
+          
+          # vvenc (VVC Encoder)
+          VVENC_VERSION="1.13.0"
+          curl -L -o vvenc.tar.gz "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v${VVENC_VERSION}.tar.gz"
+          VVENC_CHECKSUM=$(sha256sum vvenc.tar.gz | awk '{print $1}')
+          echo "vvenc_checksum=${VVENC_CHECKSUM}" >> $GITHUB_OUTPUT
+
       - name: Patch MXE aom recipe for AVM (AV2)
         run: |
           cd build-win64-mxe
           
-          # Configure target AVM version/tag
-          AVM_TAG="research-v9.0.0"
           AVM_VERSION="9.0.0"
-          AVM_TARBALL_URL="https://github.com/AOMediaCodec/avm/archive/refs/tags/${AVM_TAG}.tar.gz"
-          
-          echo "Downloading AVM tarball to compute checksum..."
-          curl -L -o avm.tar.gz "$AVM_TARBALL_URL"
-          AVM_CHECKSUM=$(sha256sum avm.tar.gz | awk '{print $1}')
-          echo "AVM Checksum: ${AVM_CHECKSUM}"
+          AVM_CHECKSUM="${{ steps.checksums.outputs.avm_checksum }}"
           
           # Replace fields in build/aom.mk
           sed -i "s|\$(PKG)_VERSION  :=.*|\$(PKG)_VERSION  := ${AVM_VERSION}|" build/aom.mk
@@ -46,9 +61,77 @@ jobs:
           
           # Disable standard patches as they will fail on AVM
           sed -i "s|\$(PKG)_PATCHES  :=.*|\$(PKG)_PATCHES  :=|" build/aom.mk
+
+      - name: Add vvdec and vvenc MXE recipes
+        run: |
+          cd build-win64-mxe
           
-          echo "=== Modified build/aom.mk ==="
-          cat build/aom.mk
+          # Create vvdec.mk
+          cat << 'EOF' > build/vvdec.mk
+PKG             := vvdec
+$(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvdec
+$(PKG)_DESCR    := Fraunhofer HHI VVC Decoder
+$(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 2.3.0
+$(PKG)_CHECKSUM := VVDEC_CHECKSUM_PLACEHOLDER
+$(PKG)_PATCHES  :=
+$(PKG)_SUBDIR   := vvdec-$($(PKG)_VERSION)
+$(PKG)_FILE     := vvdec-$($(PKG)_VERSION).tar.gz
+$(PKG)_URL      := https://github.com/fraunhoferhhi/vvdec/archive/refs/tags/v$($(PKG)_VERSION).tar.gz
+$(PKG)_DEPS     := cc
+
+define $(PKG)_BUILD
+    cd '$(BUILD_DIR)' && $(TARGET)-cmake \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCONFIG_PIC=ON \
+        '$(SOURCE_DIR)'
+    $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
+    $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
+endef
+EOF
+          sed -i "s|VVDEC_CHECKSUM_PLACEHOLDER|${{ steps.checksums.outputs.vvdec_checksum }}|" build/vvdec.mk
+          
+          # Create vvenc.mk
+          cat << 'EOF' > build/vvenc.mk
+PKG             := vvenc
+$(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvenc
+$(PKG)_DESCR    := Fraunhofer HHI VVC Encoder
+$(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 1.13.0
+$(PKG)_CHECKSUM := VVENC_CHECKSUM_PLACEHOLDER
+$(PKG)_PATCHES  :=
+$(PKG)_SUBDIR   := vvenc-$($(PKG)_VERSION)
+$(PKG)_FILE     := vvenc-$($(PKG)_VERSION).tar.gz
+$(PKG)_URL      := https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v$($(PKG)_VERSION).tar.gz
+$(PKG)_DEPS     := cc
+
+define $(PKG)_BUILD
+    cd '$(BUILD_DIR)' && $(TARGET)-cmake \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCONFIG_PIC=ON \
+        '$(SOURCE_DIR)'
+    $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
+    $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
+endef
+EOF
+          sed -i "s|VVENC_CHECKSUM_PLACEHOLDER|${{ steps.checksums.outputs.vvenc_checksum }}|" build/vvenc.mk
+
+      - name: Patch libheif recipe for VVC support
+        run: |
+          cd build-win64-mxe
+          python3 -c '
+          with open("build/libheif.mk", "r") as f:
+              content = f.read()
+          content = content.replace("$(PKG)_DEPS     := cc aom", "$(PKG)_DEPS     := cc aom vvdec vvenc")
+          content = content.replace(
+              "-DENABLE_PLUGIN_LOADING=0 \\",
+              "-DENABLE_PLUGIN_LOADING=0 \\\n        -DWITH_VVDEC=ON \\\n        -DWITH_VVENC=ON \\"
+          )
+          with open("build/libheif.mk", "w") as f:
+              f.write(content)
+          '
+          echo "=== Modified build/libheif.mk ==="
+          cat build/libheif.mk
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

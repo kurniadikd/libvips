@@ -49,17 +49,48 @@ jobs:
           sudo ninja install
           cd ../..
 
-      - name: Compile libheif with AVM
+      - name: Compile vvdec (VVC Decoder)
+        run: |
+          git clone -b v2.3.0 --depth 1 https://github.com/fraunhoferhhi/vvdec.git
+          cd vvdec
+          mkdir build && cd build
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCONFIG_PIC=ON \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            ..
+          ninja
+          sudo ninja install
+          cd ../..
+
+      - name: Compile vvenc (VVC Encoder)
+        run: |
+          git clone -b v1.13.0 --depth 1 https://github.com/fraunhoferhhi/vvenc.git
+          cd vvenc
+          mkdir build && cd build
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCONFIG_PIC=ON \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            ..
+          ninja
+          sudo ninja install
+          cd ../..
+
+      - name: Compile libheif with AVM and VVC
         run: |
           git clone -b v1.17.6 --depth 1 https://github.com/strukturag/libheif.git
           cd libheif
           mkdir build && cd build
-          # Point PKG_CONFIG_PATH to /usr/local/lib/pkgconfig where AVM's aom.pc was installed
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=ON \
             -DENABLE_PLUGIN_LOADING=OFF \
+            -DWITH_VVDEC=ON \
+            -DWITH_VVENC=ON \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             ..
           ninja
