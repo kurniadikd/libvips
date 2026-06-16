@@ -70,9 +70,9 @@ jobs:
           patch_cmd = (
               "    sed -i 's|#include <windows.h>|#include <windows.h>\\n"
               "#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif|' "
-              "'$(SOURCE_DIR)/third_party/cpuinfo/src/x86/windows/init.c' || true"
+              "'$(BUILD_DIR)/_deps/cpuinfo-src/src/x86/windows/init.c' || true\n"
           )
-          content = content.replace("define $(PKG)_BUILD", "define $(PKG)_BUILD\n" + patch_cmd)
+          content = content.replace("    # parallel build sometimes doesn't work", patch_cmd + "    # parallel build sometimes doesn't work")
           
           with open("build/aom.mk", "w") as f:
               f.write(content)
