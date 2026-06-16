@@ -34,7 +34,7 @@ jobs:
         run: |
           git clone -b research-v9.0.0 --depth 1 https://github.com/AOMediaCodec/avm.git
           cd avm
-          mkdir build && cd build
+          mkdir build_dir && cd build_dir
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
@@ -53,7 +53,7 @@ jobs:
         run: |
           git clone -b v2.3.0 --depth 1 https://github.com/fraunhoferhhi/vvdec.git
           cd vvdec
-          mkdir build && cd build
+          mkdir build_dir && cd build_dir
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
@@ -68,7 +68,7 @@ jobs:
         run: |
           git clone -b v1.13.0 --depth 1 https://github.com/fraunhoferhhi/vvenc.git
           cd vvenc
-          mkdir build && cd build
+          mkdir build_dir && cd build_dir
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
@@ -83,7 +83,7 @@ jobs:
         run: |
           git clone -b v1.17.6 --depth 1 https://github.com/strukturag/libheif.git
           cd libheif
-          mkdir build && cd build
+          mkdir build_dir && cd build_dir
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -103,12 +103,12 @@ jobs:
           cd libvips
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-          meson setup build \
+          meson setup build_dir \
             --buildtype=release \
             --prefix=/usr/local \
             -Dpdfium=disabled \
             -Dcglesv2=disabled
-          cd build
+          cd build_dir
           ninja
           sudo ninja install
           cd ../..
