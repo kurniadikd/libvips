@@ -1,0 +1,66 @@
+name: Build libvips for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl sed jq
+
+      - name: Clone libvips/build-win64-mxe
+        run: |
+          git clone https://github.com/libvips/build-win64-mxe.git
+          cd build-win64-mxe
+          git checkout master
+
+      - name: Patch MXE aom recipe for AVM (AV2)
+        run: |
+          cd build-win64-mxe
+          
+          # Configure target AVM version/tag
+          AVM_TAG="research-v9.0.0"
+          AVM_VERSION="9.0.0"
+          AVM_TARBALL_URL="https://github.com/AOMediaCodec/avm/archive/refs/tags/${AVM_TAG}.tar.gz"
+          
+          echo "Downloading AVM tarball to compute checksum..."
+          curl -L -o avm.tar.gz "$AVM_TARBALL_URL"
+          AVM_CHECKSUM=$(sha256sum avm.tar.gz | awk '{print $1}')
+          echo "AVM Checksum: ${AVM_CHECKSUM}"
+          
+          # Replace fields in build/aom.mk
+          sed -i "s|\$(PKG)_VERSION  :=.*|\$(PKG)_VERSION  := ${AVM_VERSION}|" build/aom.mk
+          sed -i "s|\$(PKG)_CHECKSUM :=.*|\$(PKG)_CHECKSUM := ${AVM_CHECKSUM}|" build/aom.mk
+          sed -i "s|\$(PKG)_SUBDIR   :=.*|\$(PKG)_SUBDIR   := avm-research-v\$([\$(PKG)_VERSION])|" build/aom.mk
+          sed -i "s|\$(PKG)_FILE     :=.*|\$(PKG)_FILE     := avm-research-v\$([\$(PKG)_VERSION]).tar.gz|" build/aom.mk
+          sed -i "s|\$(PKG)_URL      :=.*|\$(PKG)_URL      := https://github.com/AOMediaCodec/avm/archive/refs/tags/research-v\$([\$(PKG)_VERSION]).tar.gz|" build/aom.mk
+          
+          # Disable standard patches as they will fail on AVM
+          sed -i "s|\$(PKG)_PATCHES  :=.*|\$(PKG)_PATCHES  :=|" build/aom.mk
+          
+          echo "=== Modified build/aom.mk ==="
+          cat build/aom.mk
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build libvips using MXE
+        run: |
+          cd build-win64-mxe
+          # Run the build script targeting x86_64 shared build
+          ./build.sh vips-web x86_64 shared
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libvips-windows
+          path: build-win64-mxe/packaging/*.zip
