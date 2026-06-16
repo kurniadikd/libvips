@@ -22,6 +22,9 @@ jobs:
             meson \
             pkg-config \
             nasm \
+            yasm \
+            gcc-13 \
+            g++-13 \
             libglib2.0-dev \
             libexpat1-dev \
             libpng-dev \
@@ -37,10 +40,14 @@ jobs:
           git checkout research-v9.0.0
           mkdir build_dir && cd build_dir
           cmake -G Ninja \
+            -DCMAKE_C_COMPILER=gcc-13 \
+            -DCMAKE_CXX_COMPILER=g++-13 \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
             -DCONFIG_PIC=ON \
             -DENABLE_WERROR=OFF \
+            -DCMAKE_C_FLAGS="-w" \
+            -DCMAKE_CXX_FLAGS="-w" \
             -DENABLE_DOCS=OFF \
             -DENABLE_EXAMPLES=OFF \
             -DENABLE_TESTS=OFF \
