@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-24.04 # Use a modern Ubuntu release
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -35,7 +35,23 @@ jobs:
             libgif-dev \
             libbrotli-dev
 
-      - name: Compile AVM (AV2 Codec Reference Software)
+      - name: Compile Standard libaom (AV1 Support)
+        run: |
+          git clone https://aomedia.googlesource.com/aom
+          cd aom
+          git checkout v3.13.1
+          mkdir build_dir && cd build_dir
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=0 \
+            -DCONFIG_PIC=1 \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            ..
+          ninja
+          sudo ninja install
+          cd ../..
+
+      - name: Compile AVM (AV2 Reference Software - Isolated)
         run: |
           git clone https://github.com/AOMediaCodec/avm.git
           cd avm
@@ -54,14 +70,13 @@ jobs:
             -DENABLE_EXAMPLES=0 \
             -DENABLE_TESTS=0 \
             -DENABLE_TOOLS=0 \
-            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_INSTALL_PREFIX=/usr/local/avm \
             ..
           ninja
           sudo ninja install
-          # AVM does not install aom_config.h; copy it from the local build dir
-          sudo mkdir -p /usr/local/include/aom/config
-          sudo cp config/aom_config.h /usr/local/include/aom/config/aom_config.h
-          sudo cp config/aom_config.h /usr/local/include/aom/aom_config.h
+          sudo mkdir -p /usr/local/avm/include/aom/config
+          sudo cp config/aom_config.h /usr/local/avm/include/aom/config/aom_config.h
+          sudo cp config/aom_config.h /usr/local/avm/include/aom/aom_config.h
           cd ../..
 
       - name: Compile vvdec (VVC Decoder)
@@ -114,7 +129,7 @@ jobs:
           sudo ldconfig
           cd ../..
 
-      - name: Compile libheif with AVM and VVC
+      - name: Compile libheif with AV1 and VVC
         run: |
           git clone https://github.com/strukturag/libheif.git
           cd libheif
@@ -140,7 +155,6 @@ jobs:
           git checkout v8.15.2
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-          # Remove system libjpeg-turbo to avoid conflicts with Jpegli
           sudo apt-get remove -y libjpeg-turbo8-dev libjpeg-dev || true
           meson setup build_dir \
             --buildtype=release \
@@ -154,8 +168,7 @@ jobs:
 
       - name: Bundle and Package libvips Linux binaries
         run: |
-          mkdir -p dist/lib dist/include
-          # Copy compiled libraries
+          mkdir -p dist/lib dist/include dist/av2
           cp -d /usr/local/lib/libvips.so* dist/lib/
           cp -d /usr/local/lib/libheif.so* dist/lib/
           cp -d /usr/local/lib/libjpeg.so* dist/lib/ || true
@@ -163,8 +176,7 @@ jobs:
           cp -d /usr/local/lib/libjxl_threads.so* dist/lib/ || true
           cp -d /usr/local/lib/libjxl_cms.so* dist/lib/ || true
           cp -r /usr/local/include/vips dist/include/
-          
-          # Compress the distribution package
+          cp -r /usr/local/avm/* dist/av2/ || true
           tar -czf libvips-linux.tar.gz dist/
 
       - name: Upload Build Artifacts
