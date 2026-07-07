@@ -163,8 +163,7 @@ jobs:
           meson setup build_dir \
             --buildtype=release \
             --prefix=/usr/local \
-            -Dpdfium=disabled \
-            -Dcglesv2=disabled
+            -Dpdfium=disabled
           cd build_dir
           ninja
           sudo ninja install
