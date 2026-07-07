@@ -31,7 +31,9 @@ jobs:
             libjpeg-turbo8-dev \
             libwebp-dev \
             libzstd-dev \
-            libde265-dev
+            libde265-dev \
+            libgif-dev \
+            libbrotli-dev
 
       - name: Compile AVM (AV2 Codec Reference Software)
         run: |
@@ -90,6 +92,24 @@ jobs:
           sudo ninja install
           cd ../..
 
+      - name: Compile Jpegli (via libjxl)
+        run: |
+          git clone --recursive https://github.com/libjxl/libjxl.git
+          cd libjxl
+          git checkout v0.11.0
+          git submodule update --init --recursive --jobs 8
+          mkdir build && cd build
+          cmake -G Ninja .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \
+            -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \
+            -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \
+            -DCMAKE_INSTALL_PREFIX=/usr/local
+          ninja
+          sudo ninja install
+          sudo ldconfig
+          cd ../..
+
       - name: Compile libheif with AVM and VVC
         run: |
           git clone https://github.com/strukturag/libheif.git
@@ -116,6 +136,8 @@ jobs:
           git checkout v8.15.2
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          # Remove system libjpeg-turbo to avoid conflicts with Jpegli
+          sudo apt-get remove -y libjpeg-turbo8-dev libjpeg-dev || true
           meson setup build_dir \
             --buildtype=release \
             --prefix=/usr/local \
@@ -132,6 +154,10 @@ jobs:
           # Copy compiled libraries
           cp -d /usr/local/lib/libvips.so* dist/lib/
           cp -d /usr/local/lib/libheif.so* dist/lib/
+          cp -d /usr/local/lib/libjpeg.so* dist/lib/ || true
+          cp -d /usr/local/lib/libjxl.so* dist/lib/ || true
+          cp -d /usr/local/lib/libjxl_threads.so* dist/lib/ || true
+          cp -d /usr/local/lib/libjxl_cms.so* dist/lib/ || true
           cp -r /usr/local/include/vips dist/include/
           
           # Compress the distribution package
