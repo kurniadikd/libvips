@@ -58,14 +58,10 @@ jobs:
             ..
           ninja
           sudo ninja install
-          # Fix AVM header layout quirk so dependent libraries like libheif can find it
+          # AVM installs aom_config.h to /usr/local/include/aom/ but libheif expects
+          # it at aom/config/aom_config.h. Create the subdir and copy it there.
           sudo mkdir -p /usr/local/include/aom/config
-          for header_path in aom_config.h config/aom_config.h /usr/local/include/aom/aom_config.h; do
-            if [ -f "$header_path" ]; then
-              sudo cp "$header_path" /usr/local/include/aom/config/aom_config.h
-              sudo cp "$header_path" /usr/local/include/aom/aom_config.h
-            fi
-          done
+          sudo cp /usr/local/include/aom/aom_config.h /usr/local/include/aom/config/aom_config.h
           cd ../..
 
       - name: Compile vvdec (VVC Decoder)
