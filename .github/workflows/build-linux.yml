@@ -58,10 +58,10 @@ jobs:
             ..
           ninja
           sudo ninja install
-          # AVM installs aom_config.h to /usr/local/include/aom/ but libheif expects
-          # it at aom/config/aom_config.h. Create the subdir and copy it there.
+          # AVM does not install aom_config.h; copy it from the local build dir
           sudo mkdir -p /usr/local/include/aom/config
-          sudo cp /usr/local/include/aom/aom_config.h /usr/local/include/aom/config/aom_config.h
+          sudo cp config/aom_config.h /usr/local/include/aom/config/aom_config.h
+          sudo cp config/aom_config.h /usr/local/include/aom/aom_config.h
           cd ../..
 
       - name: Compile vvdec (VVC Decoder)
