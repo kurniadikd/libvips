@@ -134,6 +134,10 @@ jobs:
           git clone https://github.com/strukturag/libheif.git
           cd libheif
           git checkout v1.17.6
+          
+          # Fix: Jpegli defines LIBJPEG_TURBO_VERSION_NUMBER empty, breaking example tools
+          sed -i 's/defined(LIBJPEG_TURBO_VERSION_NUMBER) && LIBJPEG_TURBO_VERSION_NUMBER == 2000000/0/g' examples/decoder_jpeg.cc
+          
           mkdir build_dir && cd build_dir
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           cmake -G Ninja \
