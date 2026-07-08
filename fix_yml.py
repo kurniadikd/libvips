@@ -1,4 +1,5 @@
-name: Build libvips for Linux
+import pathlib
+content = """name: Build libvips for Linux
 
 on:
   workflow_dispatch:
@@ -15,24 +16,24 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            meson \
-            pkg-config \
-            nasm \
-            yasm \
-            gcc-13 \
-            g++-13 \
-            libglib2.0-dev \
-            libexpat1-dev \
-            libpng-dev \
-            libjpeg-turbo8-dev \
-            libwebp-dev \
-            libzstd-dev \
-            libde265-dev \
-            libgif-dev \
+          sudo apt-get install -y \\
+            build-essential \\
+            cmake \\
+            ninja-build \\
+            meson \\
+            pkg-config \\
+            nasm \\
+            yasm \\
+            gcc-13 \\
+            g++-13 \\
+            libglib2.0-dev \\
+            libexpat1-dev \\
+            libpng-dev \\
+            libjpeg-turbo8-dev \\
+            libwebp-dev \\
+            libzstd-dev \\
+            libde265-dev \\
+            libgif-dev \\
             libbrotli-dev
 
       - name: Compile Standard libaom (AV1 Support)
@@ -41,12 +42,12 @@ jobs:
           cd aom
           git checkout v3.13.1
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=0 \
-            -DCONFIG_PIC=1 \
-            -DCMAKE_INSTALL_PREFIX=/usr/local \
-            -DCMAKE_INSTALL_LIBDIR=lib \
+          cmake -G Ninja \\
+            -DCMAKE_BUILD_TYPE=Release \\
+            -DBUILD_SHARED_LIBS=0 \\
+            -DCONFIG_PIC=1 \\
+            -DCMAKE_INSTALL_PREFIX=/usr/local \\
+            -DCMAKE_INSTALL_LIBDIR=lib \\
             ..
           ninja
           sudo ninja install
@@ -58,20 +59,20 @@ jobs:
           cd avm
           git checkout research-v9.0.0
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \
-            -DCMAKE_C_COMPILER=gcc-13 \
-            -DCMAKE_CXX_COMPILER=g++-13 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=0 \
-            -DCONFIG_PIC=1 \
-            -DENABLE_WERROR=0 \
-            -DCMAKE_C_FLAGS="-w" \
-            -DCMAKE_CXX_FLAGS="-w" \
-            -DENABLE_DOCS=0 \
-            -DENABLE_EXAMPLES=0 \
-            -DENABLE_TESTS=0 \
-            -DENABLE_TOOLS=0 \
-            -DCMAKE_INSTALL_PREFIX=/usr/local/avm \
+          cmake -G Ninja \\
+            -DCMAKE_C_COMPILER=gcc-13 \\
+            -DCMAKE_CXX_COMPILER=g++-13 \\
+            -DCMAKE_BUILD_TYPE=Release \\
+            -DBUILD_SHARED_LIBS=0 \\
+            -DCONFIG_PIC=1 \\
+            -DENABLE_WERROR=0 \\
+            -DCMAKE_C_FLAGS="-w" \\
+            -DCMAKE_CXX_FLAGS="-w" \\
+            -DENABLE_DOCS=0 \\
+            -DENABLE_EXAMPLES=0 \\
+            -DENABLE_TESTS=0 \\
+            -DENABLE_TOOLS=0 \\
+            -DCMAKE_INSTALL_PREFIX=/usr/local/avm \\
             ..
           ninja
           sudo ninja install
@@ -86,12 +87,12 @@ jobs:
           cd vvdec
           git checkout v2.3.0
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=0 \
-            -DCONFIG_PIC=1 \
-            -DCMAKE_INSTALL_PREFIX=/usr/local \
-            -DCMAKE_INSTALL_LIBDIR=lib \
+          cmake -G Ninja \\
+            -DCMAKE_BUILD_TYPE=Release \\
+            -DBUILD_SHARED_LIBS=0 \\
+            -DCONFIG_PIC=1 \\
+            -DCMAKE_INSTALL_PREFIX=/usr/local \\
+            -DCMAKE_INSTALL_LIBDIR=lib \\
             ..
           ninja
           sudo ninja install
@@ -103,12 +104,12 @@ jobs:
           cd vvenc
           git checkout v1.13.0
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=0 \
-            -DCONFIG_PIC=1 \
-            -DCMAKE_INSTALL_PREFIX=/usr/local \
-            -DCMAKE_INSTALL_LIBDIR=lib \
+          cmake -G Ninja \\
+            -DCMAKE_BUILD_TYPE=Release \\
+            -DBUILD_SHARED_LIBS=0 \\
+            -DCONFIG_PIC=1 \\
+            -DCMAKE_INSTALL_PREFIX=/usr/local \\
+            -DCMAKE_INSTALL_LIBDIR=lib \\
             ..
           ninja
           sudo ninja install
@@ -121,12 +122,12 @@ jobs:
           git checkout v0.11.0
           git submodule update --init --recursive --jobs 8
           mkdir build && cd build
-          cmake -G Ninja .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \
-            -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \
-            -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \
-            -DCMAKE_INSTALL_PREFIX=/usr/local \
+          cmake -G Ninja .. \\
+            -DCMAKE_BUILD_TYPE=Release \\
+            -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \\
+            -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \\
+            -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \\
+            -DCMAKE_INSTALL_PREFIX=/usr/local \\
             -DCMAKE_INSTALL_LIBDIR=lib
           ninja
           sudo ninja install
@@ -144,14 +145,14 @@ jobs:
           
           mkdir build_dir && cd build_dir
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-          cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=ON \
-            -DENABLE_PLUGIN_LOADING=OFF \
-            -DWITH_VVDEC=ON \
-            -DWITH_VVENC=ON \
-            -DCMAKE_INSTALL_PREFIX=/usr/local \
-            -DCMAKE_INSTALL_LIBDIR=lib \
+          cmake -G Ninja \\
+            -DCMAKE_BUILD_TYPE=Release \\
+            -DBUILD_SHARED_LIBS=ON \\
+            -DENABLE_PLUGIN_LOADING=OFF \\
+            -DWITH_VVDEC=ON \\
+            -DWITH_VVENC=ON \\
+            -DCMAKE_INSTALL_PREFIX=/usr/local \\
+            -DCMAKE_INSTALL_LIBDIR=lib \\
             ..
           ninja
           sudo ninja install
@@ -165,11 +166,11 @@ jobs:
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           sudo apt-get remove -y libjpeg-turbo8-dev libjpeg-dev || true
-          meson setup build_dir \
-            --buildtype=release \
-            --prefix=/usr/local \
-            --libdir=lib \
-            -Dpdfium=disabled \
+          meson setup build_dir \\
+            --buildtype=release \\
+            --prefix=/usr/local \\
+            --libdir=lib \\
+            -Dpdfium=disabled \\
             -Dcglesv2=disabled
           cd build_dir
           ninja
@@ -211,3 +212,6 @@ jobs:
         with:
           name: libvips-linux
           path: libvips-linux.tar.gz
+"""
+pathlib.Path('.github/workflows/build-linux.yml').write_text(content, encoding='utf-8')
+print('Done')
