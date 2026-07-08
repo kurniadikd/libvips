@@ -170,8 +170,7 @@ jobs:
             --buildtype=release \\
             --prefix=/usr/local \\
             --libdir=lib \\
-            -Dpdfium=disabled \\
-            -Dcglesv2=disabled
+            -Dpdfium=disabled
           cd build_dir
           ninja
           sudo ninja install
