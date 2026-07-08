@@ -67,9 +67,9 @@ jobs:
           with open("build/aom.mk", "r") as f:
               content = f.read()
           
+          # Prepend max macro definition at the top of cpuinfo init.c
           patch_cmd = (
-              "    sed -i 's|#include <windows.h>|#include <windows.h>\\n"
-              "#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif|' "
+              "    sed -i '1i#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif' "
               "'$(BUILD_DIR)/_deps/cpuinfo-src/src/x86/windows/init.c' || true\n"
           )
           content = content.replace("    # parallel build sometimes doesn't work", patch_cmd + "    # parallel build sometimes doesn't work")
