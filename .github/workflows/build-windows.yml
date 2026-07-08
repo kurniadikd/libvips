@@ -62,7 +62,7 @@ jobs:
           # Disable standard patches as they will fail on AVM
           sed -i "s|\$(PKG)_PATCHES  :=.*|\$(PKG)_PATCHES  :=|" build/aom.mk
           
-          # Patch cpuinfo max error in aom.mk
+          # Patch cpuinfo max error and abseil pthreads issue in aom.mk
           python3 - << 'EOF'
           with open("build/aom.mk", "r") as f:
               content = f.read()
@@ -73,6 +73,12 @@ jobs:
               "'$(BUILD_DIR)/cpuinfo/src/x86/windows/init.c' || true\n"
           )
           content = content.replace("    # parallel build sometimes doesn't work", patch_cmd + "    # parallel build sometimes doesn't work")
+          
+          # Add -D_WIN32_WINNT to cmake flags so abseil uses Windows threads instead of pthreads
+          content = content.replace(
+              "-DCONFIG_WEBM_IO=0 \\",
+              "-DCONFIG_WEBM_IO=0 \\\n        -DCMAKE_C_FLAGS='-D_WIN32_WINNT=0x0601' \\\n        -DCMAKE_CXX_FLAGS='-D_WIN32_WINNT=0x0601' \\"
+          )
           
           with open("build/aom.mk", "w") as f:
               f.write(content)
