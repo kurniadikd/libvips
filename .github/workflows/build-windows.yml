@@ -67,10 +67,10 @@ jobs:
           with open("build/aom.mk", "r") as f:
               content = f.read()
           
-          # Prepend max macro definition at the top of cpuinfo init.c
+          # Fix: cpuinfo path is $(BUILD_DIR)/cpuinfo/ not $(BUILD_DIR)/_deps/cpuinfo-src/
           patch_cmd = (
-              "    sed -i '1i#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif' "
-              "'$(BUILD_DIR)/_deps/cpuinfo-src/src/x86/windows/init.c' || true\n"
+              "    sed -i '1i\\#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif' "
+              "'$(BUILD_DIR)/cpuinfo/src/x86/windows/init.c' || true\n"
           )
           content = content.replace("    # parallel build sometimes doesn't work", patch_cmd + "    # parallel build sometimes doesn't work")
           
