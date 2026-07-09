@@ -73,6 +73,7 @@ jobs:
               "        -DCONFIG_TENSORFLOW_LITE=0 \\\n" +
               "        -DCONFIG_ML_PART_SPLIT=0 \\\n" +
               "        -DCONFIG_ERP_TFLITE=0 \\\n" +
+              "        -DBUILD_SHARED_LIBS=OFF \\\n" +
               "        -DENABLE_TESTS=OFF \\\n" +
               "        -DENABLE_EXAMPLES=OFF \\\n" +
               "        -DENABLE_DOCS=OFF \\"
