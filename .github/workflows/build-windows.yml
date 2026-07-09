@@ -62,23 +62,19 @@ jobs:
           # Disable standard patches as they will fail on AVM
           sed -i "s|\$(PKG)_PATCHES  :=.*|\$(PKG)_PATCHES  :=|" build/aom.mk
           
-          # Patch cpuinfo max error and abseil pthreads issue in aom.mk
+          # Add pthreads dependency so abseil can find pthread.h
+          sed -i "s|\$(PKG)_DEPS     :=.*|\$(PKG)_DEPS     := cc \$(BUILD)~nasm pthreads|" build/aom.mk
+          
+          # Patch cpuinfo max error in aom.mk
           python3 - << 'EOF'
           with open("build/aom.mk", "r") as f:
               content = f.read()
           
-          # Fix: cpuinfo path is $(BUILD_DIR)/cpuinfo/ not $(BUILD_DIR)/_deps/cpuinfo-src/
           patch_cmd = (
               "    sed -i '1i\\#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif' "
               "'$(BUILD_DIR)/cpuinfo/src/x86/windows/init.c' || true\n"
           )
-          # Patch abseil thread_identity.cc to use Windows threads instead of pthreads
-          abseil_patch = (
-              "    sed -i 's|#include <pthread.h>|#include <windows.h>|' "
-              "'$(BUILD_DIR)/_deps/abseil-cpp-src/absl/base/internal/thread_identity.cc' || true\n"
-          )
-          content = content.replace("    # parallel build sometimes doesn't work",
-              patch_cmd + abseil_patch + "    # parallel build sometimes doesn't work")
+          content = content.replace("    # parallel build sometimes doesn't work", patch_cmd + "    # parallel build sometimes doesn't work")
           
           with open("build/aom.mk", "w") as f:
               f.write(content)
