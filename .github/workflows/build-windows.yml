@@ -62,22 +62,27 @@ jobs:
           # Disable standard patches as they will fail on AVM
           sed -i "s|\$(PKG)_PATCHES  :=.*|\$(PKG)_PATCHES  :=|" build/aom.mk
           
-          # Patch cpuinfo max error in aom.mk + disable abseil pthread
+          # Patch aom.mk: cpuinfo fix + abseil pthread disable via cmake + sed fallback
           python3 - << 'EOF'
           with open("build/aom.mk", "r") as f:
               content = f.read()
           
-          # Insert cpuinfo fix + abseil pthread disable before make step
-          patch_cmd = (
+          # Insert cpuinfo fix + abseil pthread sed before make step
+          patch_cmds = (
               "    sed -i '1i\\#ifndef max\\n#define max(a,b) (((a) > (b)) ? (a) : (b))\\n#endif' "
               "'$(BUILD_DIR)/cpuinfo/src/x86/windows/init.c' || true\n"
+              "    # Force abseil to not use pthreads (cmake check is wrong for cross-compile)\n"
+              "    find '$(BUILD_DIR)' -path '*/absl/base/internal/thread_identity.cc' -exec \\\n"
+              "        sed -i 's|#include <pthread.h>|// #include <pthread.h|' {} + 2>/dev/null || true\n"
+              "    find '$(BUILD_DIR)' -path '*/absl/synchronization/*.cc' -exec \\\n"
+              "        sed -i 's|#include <pthread.h>|// #include <pthread.h|' {} + 2>/dev/null || true\n"
           )
-          content = content.replace("    # parallel build sometimes doesn't work", patch_cmd + "    # parallel build sometimes doesn't work")
+          content = content.replace("    # parallel build sometimes doesn't work", patch_cmds + "    # parallel build sometimes doesn't work")
           
-          # Add abseil pthread disable to cmake flags
+          # Force HAVE_PTHREAD_H=0 in cmake cache (correct abseil variable)
           content = content.replace(
               "-DCONFIG_WEBM_IO=0 \\",
-              "-DCONFIG_WEBM_IO=0 \\\n        -DABSL_USE_PTHREAD:BOOL=OFF \\\n        -DCMAKE_DISABLE_FIND_PACKAGE_Pthreads=TRUE \\"
+              "-DCONFIG_WEBM_IO=0 \\\n        -DHAVE_PTHREAD_H:BOOL=OFF \\"
           )
           
           with open("build/aom.mk", "w") as f:
