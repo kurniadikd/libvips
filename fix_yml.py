@@ -92,6 +92,7 @@ jobs:
             -DBUILD_SHARED_LIBS=0 \\
             -DCONFIG_PIC=1 \\
             -DVVDEC_ENABLE_WARNINGS_AS_WERROR=OFF \\
+            -DVVDEC_ENABLE_LINK_TIME_OPT=OFF \\
             -DCMAKE_INSTALL_PREFIX=/usr/local \\
             -DCMAKE_INSTALL_LIBDIR=lib \\
             ..
@@ -110,6 +111,7 @@ jobs:
             -DBUILD_SHARED_LIBS=0 \\
             -DCONFIG_PIC=1 \\
             -DVVENC_ENABLE_WERROR=OFF \\
+            -DVVENC_ENABLE_LINK_TIME_OPT=OFF \\
             -DCMAKE_INSTALL_PREFIX=/usr/local \\
             -DCMAKE_INSTALL_LIBDIR=lib \\
             ..
