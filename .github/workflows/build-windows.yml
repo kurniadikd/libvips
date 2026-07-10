@@ -109,6 +109,7 @@ jobs:
                   cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
                       -DBUILD_SHARED_LIBS=OFF \\
                       -DCONFIG_PIC=ON \\
+                      -DVVDEC_ENABLE_WARNINGS_AS_WERROR=OFF \\
                       '$(SOURCE_DIR)'
                   $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
                   $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
@@ -134,6 +135,7 @@ jobs:
                   cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
                       -DBUILD_SHARED_LIBS=OFF \\
                       -DCONFIG_PIC=ON \\
+                      -DVVENC_ENABLE_WERROR=OFF \\
                       '$(SOURCE_DIR)'
                   $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
                   $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
