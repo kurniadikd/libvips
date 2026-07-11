@@ -110,6 +110,11 @@ jobs:
               "-DENABLE_PLUGIN_LOADING=0 \\",
               "-DENABLE_PLUGIN_LOADING=0 \\\n        -DWITH_VVDEC=ON \\\n        -DWITH_VVENC=ON \\"
           )
+          content = content.replace(
+              "$(MAKE) -C '"'"'$(BUILD_DIR)'"'"' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))",
+              "$(MAKE) -C '"'"'$(BUILD_DIR)'"'"' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))\n" +
+              "\techo \"Libs.private: -lvvenc -lvvdec\" >> '"'"'$(PREFIX)/$(TARGET)/lib/pkgconfig/libheif.pc'"'"'"
+          )
           with open("build/libheif.mk", "w") as f:
               f.write(content)
           '
