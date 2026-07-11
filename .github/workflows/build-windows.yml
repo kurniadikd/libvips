@@ -38,7 +38,13 @@ jobs:
           VVENC_CHECKSUM=$(sha256sum vvenc.tar.gz | awk '{print $1}')
           echo "vvenc_checksum=${VVENC_CHECKSUM}" >> $GITHUB_OUTPUT
 
-      - name: Add vvdec and vvenc MXE recipes
+          # SVT-AV1 (AV1 Encoder)
+          SVT_VERSION="1.8.0"
+          curl -L -o svt.tar.gz "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${SVT_VERSION}/SVT-AV1-v${SVT_VERSION}.tar.gz"
+          SVT_CHECKSUM=$(sha256sum svt.tar.gz | awk '{print $1}')
+          echo "svt_checksum=${SVT_CHECKSUM}" >> $GITHUB_OUTPUT
+
+      - name: Add vvdec, vvenc and svt MXE recipes
         run: |
           cd build-win64-mxe
           python3 - << 'EOF'
@@ -58,14 +64,14 @@ jobs:
               $(PKG)_DEPS     := cc
 
               define $(PKG)_BUILD
-                  cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
-                      -DBUILD_SHARED_LIBS=OFF \\
-                      -DCONFIG_PIC=ON \\
-                      -DVVDEC_ENABLE_WARNINGS_AS_WERROR=OFF \\
-                      -DVVDEC_ENABLE_LINK_TIME_OPT=OFF \\
-                      '$(SOURCE_DIR)'
-                  $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
-                  $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
+                   cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
+                       -DBUILD_SHARED_LIBS=OFF \\
+                       -DCONFIG_PIC=ON \\
+                       -DVVDEC_ENABLE_WARNINGS_AS_WERROR=OFF \\
+                       -DVVDEC_ENABLE_LINK_TIME_OPT=OFF \\
+                       '$(SOURCE_DIR)'
+                   $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
+                   $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
               endef
           """)
           with open("build/vvdec.mk", "w") as f:
@@ -97,23 +103,49 @@ jobs:
           """)
           with open("build/vvenc.mk", "w") as f:
               f.write(vvenc_content)
+
+          svt_content = textwrap.dedent("""\
+              PKG             := svt
+              $(PKG)_WEBSITE  := https://gitlab.com/AOMediaCodec/SVT-AV1
+              $(PKG)_DESCR    := Scalable Video Technology for AV1
+              $(PKG)_IGNORE   :=
+              $(PKG)_VERSION  := 1.8.0
+              $(PKG)_CHECKSUM := ${{ steps.checksums.outputs.svt_checksum }}
+              $(PKG)_PATCHES  :=
+              $(PKG)_SUBDIR   := SVT-AV1-v$($(PKG)_VERSION)
+              $(PKG)_FILE     := SVT-AV1-v$($(PKG)_VERSION).tar.gz
+              $(PKG)_URL      := https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v$($(PKG)_VERSION)/$($(PKG)_FILE)
+              $(PKG)_DEPS     := cc $(BUILD)~nasm
+
+              define $(PKG)_BUILD
+                  cd '$(BUILD_DIR)' && $(TARGET)-cmake \\
+                      -DBUILD_SHARED_LIBS=OFF \\
+                      -DCONFIG_PIC=ON \\
+                      -DENABLE_AVX512=OFF \\
+                      '$(SOURCE_DIR)'
+                  $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
+                  $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
+              endef
+          """)
+          with open("build/svt.mk", "w") as f:
+              f.write(svt_content)
           EOF
 
-      - name: Patch libheif recipe for VVC support
+      - name: Patch libheif recipe for VVC and SVT support
         run: |
           cd build-win64-mxe
           python3 -c '
           with open("build/libheif.mk", "r") as f:
               content = f.read()
-          content = content.replace("$(PKG)_DEPS     := cc aom", "$(PKG)_DEPS     := cc aom vvdec vvenc")
+          content = content.replace("$(PKG)_DEPS     := cc aom", "$(PKG)_DEPS     := cc aom svt vvdec vvenc")
           content = content.replace(
               "-DENABLE_PLUGIN_LOADING=0 \\",
-              "-DENABLE_PLUGIN_LOADING=0 \\\n        -DWITH_VVDEC=ON \\\n        -DWITH_VVENC=ON \\"
+              "-DENABLE_PLUGIN_LOADING=0 \\\n        -DWITH_VVDEC=ON \\\n        -DWITH_VVENC=ON \\\n        -DWITH_SvtEnc=ON \\"
           )
           content = content.replace(
               "$(MAKE) -C '"'"'$(BUILD_DIR)'"'"' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))",
               "$(MAKE) -C '"'"'$(BUILD_DIR)'"'"' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))\n" +
-              "\techo \"Libs.private: -lvvenc -lvvdec\" >> '"'"'$(PREFIX)/$(TARGET)/lib/pkgconfig/libheif.pc'"'"'"
+              "\techo \"Libs.private: -lvvenc -lvvdec -lSvtAv1Enc\" >> '"'"'$(PREFIX)/$(TARGET)/lib/pkgconfig/libheif.pc'"'"'"
           )
           with open("build/libheif.mk", "w") as f:
               f.write(content)
