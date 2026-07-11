@@ -159,6 +159,9 @@ jobs:
         run: |
           cd build-win64-mxe
           python3 -c '
+          import pathlib
+          import textwrap
+
           with open("build/libheif.mk", "r") as f:
               content = f.read()
           content = content.replace("$(PKG)_DEPS     := cc aom", "$(PKG)_DEPS     := cc aom vvdec vvenc")
@@ -168,6 +171,21 @@ jobs:
           )
           with open("build/libheif.mk", "w") as f:
               f.write(content)
+
+          # Create patch to remove allow_lowbitdepth from libheif aom plugin
+          # because AVM (AV2 reference software) does not have it in config structure.
+          patch_dir = pathlib.Path("build/patches")
+          patch_dir.mkdir(parents=True, exist_ok=True)
+          patch_content = textwrap.dedent("""\
+              --- a/libheif/plugins/decoder_aom.cc
+              +++ b/libheif/plugins/decoder_aom.cc
+              @@ -131,3 +131,2 @@
+                 cfg.h = 0;
+              -  cfg.allow_lowbitdepth = 1;
+               
+          """)
+          with open(patch_dir / "libheif-1-fixes.patch", "w") as f:
+              f.write(patch_content)
           '
           echo "=== Modified build/libheif.mk ==="
           cat build/libheif.mk
