@@ -127,8 +127,7 @@ jobs:
       - name: Build libvips using MXE
         run: |
           cd build-win64-mxe
-          # Run the build script targeting x86_64 shared build with Jpegli support
-          ./build.sh vips-web x86_64 shared --with-jpegli
+          ./build.sh -t x86_64-w64-mingw32.shared vips-web --with-jpegli
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
