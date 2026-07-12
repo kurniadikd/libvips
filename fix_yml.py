@@ -2,6 +2,8 @@ import pathlib
 content = """name: Build libvips for Linux
 
 on:
+  schedule:
+    - cron: '0 1 * * *' # Runs automatically every day at 01:00 UTC
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -16,38 +18,38 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \\
-            build-essential \\
-            cmake \\
-            ninja-build \\
-            meson \\
-            pkg-config \\
-            nasm \\
-            yasm \\
-            gcc-13 \\
-            g++-13 \\
-            libglib2.0-dev \\
-            libexpat1-dev \\
-            libpng-dev \\
-            libjpeg-turbo8-dev \\
-            libwebp-dev \\
-            libzstd-dev \\
-            libde265-dev \\
-            libgif-dev \\
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            meson \
+            pkg-config \
+            nasm \
+            yasm \
+            gcc-13 \
+            g++-13 \
+            libglib2.0-dev \
+            libexpat1-dev \
+            libpng-dev \
+            libjpeg-turbo8-dev \
+            libwebp-dev \
+            libzstd-dev \
+            libde265-dev \
+            libgif-dev \
             libbrotli-dev
 
       - name: Compile Standard libaom (AV1 Support)
         run: |
           git clone https://aomedia.googlesource.com/aom
           cd aom
-          git checkout v3.13.1
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \\
-            -DCMAKE_BUILD_TYPE=Release \\
-            -DBUILD_SHARED_LIBS=0 \\
-            -DCONFIG_PIC=1 \\
-            -DCMAKE_INSTALL_PREFIX=/usr/local \\
-            -DCMAKE_INSTALL_LIBDIR=lib \\
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=0 \
+            -DCONFIG_PIC=1 \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_INSTALL_LIBDIR=lib \
             ..
           ninja
           sudo ninja install
@@ -57,22 +59,22 @@ jobs:
         run: |
           git clone https://github.com/AOMediaCodec/avm.git
           cd avm
-          git checkout research-v9.0.0
+          git checkout $(git tag -l "research-v[0-9]*" | sort -V | tail -n 1)
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \\
-            -DCMAKE_C_COMPILER=gcc-13 \\
-            -DCMAKE_CXX_COMPILER=g++-13 \\
-            -DCMAKE_BUILD_TYPE=Release \\
-            -DBUILD_SHARED_LIBS=0 \\
-            -DCONFIG_PIC=1 \\
-            -DENABLE_WERROR=0 \\
-            -DCMAKE_C_FLAGS="-w" \\
-            -DCMAKE_CXX_FLAGS="-w" \\
-            -DENABLE_DOCS=0 \\
-            -DENABLE_EXAMPLES=0 \\
-            -DENABLE_TESTS=0 \\
-            -DENABLE_TOOLS=0 \\
-            -DCMAKE_INSTALL_PREFIX=/usr/local/avm \\
+          cmake -G Ninja \
+            -DCMAKE_C_COMPILER=gcc-13 \
+            -DCMAKE_CXX_COMPILER=g++-13 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=0 \
+            -DCONFIG_PIC=1 \
+            -DENABLE_WERROR=0 \
+            -DCMAKE_C_FLAGS="-w" \
+            -DCMAKE_CXX_FLAGS="-w" \
+            -DENABLE_DOCS=0 \
+            -DENABLE_EXAMPLES=0 \
+            -DENABLE_TESTS=0 \
+            -DENABLE_TOOLS=0 \
+            -DCMAKE_INSTALL_PREFIX=/usr/local/avm \
             ..
           ninja
           sudo ninja install
@@ -85,16 +87,16 @@ jobs:
         run: |
           git clone https://github.com/fraunhoferhhi/vvdec.git
           cd vvdec
-          git checkout v2.3.0
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \\
-            -DCMAKE_BUILD_TYPE=Release \\
-            -DBUILD_SHARED_LIBS=0 \\
-            -DCONFIG_PIC=1 \\
-            -DVVDEC_ENABLE_WARNINGS_AS_WERROR=OFF \\
-            -DVVDEC_ENABLE_LINK_TIME_OPT=OFF \\
-            -DCMAKE_INSTALL_PREFIX=/usr/local \\
-            -DCMAKE_INSTALL_LIBDIR=lib \\
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=0 \
+            -DCONFIG_PIC=1 \
+            -DVVDEC_ENABLE_WARNINGS_AS_WERROR=OFF \
+            -DVVDEC_ENABLE_LINK_TIME_OPT=OFF \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_INSTALL_LIBDIR=lib \
             ..
           ninja
           sudo ninja install
@@ -104,16 +106,16 @@ jobs:
         run: |
           git clone https://github.com/fraunhoferhhi/vvenc.git
           cd vvenc
-          git checkout v1.13.0
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           mkdir build_dir && cd build_dir
-          cmake -G Ninja \\
-            -DCMAKE_BUILD_TYPE=Release \\
-            -DBUILD_SHARED_LIBS=0 \\
-            -DCONFIG_PIC=1 \\
-            -DVVENC_ENABLE_WERROR=OFF \\
-            -DVVENC_ENABLE_LINK_TIME_OPT=OFF \\
-            -DCMAKE_INSTALL_PREFIX=/usr/local \\
-            -DCMAKE_INSTALL_LIBDIR=lib \\
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=0 \
+            -DCONFIG_PIC=1 \
+            -DVVENC_ENABLE_WERROR=OFF \
+            -DVVENC_ENABLE_LINK_TIME_OPT=OFF \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_INSTALL_LIBDIR=lib \
             ..
           ninja
           sudo ninja install
@@ -123,15 +125,15 @@ jobs:
         run: |
           git clone --recursive https://github.com/libjxl/libjxl.git
           cd libjxl
-          git checkout v0.11.0
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           git submodule update --init --recursive --jobs 8
           mkdir build && cd build
-          cmake -G Ninja .. \\
-            -DCMAKE_BUILD_TYPE=Release \\
-            -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \\
-            -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \\
-            -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \\
-            -DCMAKE_INSTALL_PREFIX=/usr/local \\
+          cmake -G Ninja .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \
+            -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \
+            -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DCMAKE_INSTALL_LIBDIR=lib
           ninja
           sudo ninja install
@@ -142,21 +144,21 @@ jobs:
         run: |
           git clone https://github.com/strukturag/libheif.git
           cd libheif
-          git checkout v1.17.6
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           
           # Fix: Jpegli defines LIBJPEG_TURBO_VERSION_NUMBER empty, breaking example tools
           sed -i 's/defined(LIBJPEG_TURBO_VERSION_NUMBER) && LIBJPEG_TURBO_VERSION_NUMBER == 2000000/0/g' examples/decoder_jpeg.cc
           
           mkdir build_dir && cd build_dir
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-          cmake -G Ninja \\
-            -DCMAKE_BUILD_TYPE=Release \\
-            -DBUILD_SHARED_LIBS=ON \\
-            -DENABLE_PLUGIN_LOADING=OFF \\
-            -DWITH_VVDEC=ON \\
-            -DWITH_VVENC=ON \\
-            -DCMAKE_INSTALL_PREFIX=/usr/local \\
-            -DCMAKE_INSTALL_LIBDIR=lib \\
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DENABLE_PLUGIN_LOADING=OFF \
+            -DWITH_VVDEC=ON \
+            -DWITH_VVENC=ON \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_INSTALL_LIBDIR=lib \
             ..
           ninja
           sudo ninja install
@@ -166,14 +168,14 @@ jobs:
         run: |
           git clone https://github.com/libvips/libvips.git
           cd libvips
-          git checkout v8.15.2
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           sudo apt-get remove -y libjpeg-turbo8-dev libjpeg-dev || true
-          meson setup build_dir \\
-            --buildtype=release \\
-            --prefix=/usr/local \\
-            --libdir=lib \\
+          meson setup build_dir \
+            --buildtype=release \
+            --prefix=/usr/local \
+            --libdir=lib \
             -Dpdfium=disabled
           cd build_dir
           ninja
