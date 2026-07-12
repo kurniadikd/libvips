@@ -1,6 +1,8 @@
 name: Build libvips for Windows
 
 on:
+  schedule:
+    - cron: '0 0 * * *' # Runs automatically every day at 00:00 UTC
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -27,22 +29,31 @@ jobs:
         id: checksums
         run: |
           # vvdec (VVC Decoder)
-          VVDEC_VERSION="2.3.0"
+          VVDEC_TAG=$(curl -s "https://api.github.com/repos/fraunhoferhhi/vvdec/releases/latest" | jq -r .tag_name)
+          VVDEC_VERSION=${VVDEC_TAG#v}
+          echo "Fetching vvdec version: ${VVDEC_VERSION}"
           curl -L -o vvdec.tar.gz "https://github.com/fraunhoferhhi/vvdec/archive/refs/tags/v${VVDEC_VERSION}.tar.gz"
           VVDEC_CHECKSUM=$(sha256sum vvdec.tar.gz | awk '{print $1}')
           echo "vvdec_checksum=${VVDEC_CHECKSUM}" >> $GITHUB_OUTPUT
+          echo "vvdec_version=${VVDEC_VERSION}" >> $GITHUB_OUTPUT
           
           # vvenc (VVC Encoder)
-          VVENC_VERSION="1.13.0"
+          VVENC_TAG=$(curl -s "https://api.github.com/repos/fraunhoferhhi/vvenc/releases/latest" | jq -r .tag_name)
+          VVENC_VERSION=${VVENC_TAG#v}
+          echo "Fetching vvenc version: ${VVENC_VERSION}"
           curl -L -o vvenc.tar.gz "https://github.com/fraunhoferhhi/vvenc/archive/refs/tags/v${VVENC_VERSION}.tar.gz"
           VVENC_CHECKSUM=$(sha256sum vvenc.tar.gz | awk '{print $1}')
           echo "vvenc_checksum=${VVENC_CHECKSUM}" >> $GITHUB_OUTPUT
+          echo "vvenc_version=${VVENC_VERSION}" >> $GITHUB_OUTPUT
 
           # SVT-AV1 (AV1 Encoder)
-          SVT_VERSION="1.8.0"
+          SVT_TAG=$(curl -s "https://gitlab.com/api/v4/projects/AOMediaCodec%2FSVT-AV1/releases" | jq -r '.[0].tag_name')
+          SVT_VERSION=${SVT_TAG#v}
+          echo "Fetching SVT-AV1 version: ${SVT_VERSION}"
           curl -L -o svt.tar.gz "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${SVT_VERSION}/SVT-AV1-v${SVT_VERSION}.tar.gz"
           SVT_CHECKSUM=$(sha256sum svt.tar.gz | awk '{print $1}')
           echo "svt_checksum=${SVT_CHECKSUM}" >> $GITHUB_OUTPUT
+          echo "svt_version=${SVT_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Add vvdec, vvenc and svt MXE recipes
         run: |
@@ -55,7 +66,7 @@ jobs:
               $(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvdec
               $(PKG)_DESCR    := Fraunhofer HHI VVC Decoder
               $(PKG)_IGNORE   :=
-              $(PKG)_VERSION  := 2.3.0
+              $(PKG)_VERSION  := ${{ steps.checksums.outputs.vvdec_version }}
               $(PKG)_CHECKSUM := ${{ steps.checksums.outputs.vvdec_checksum }}
               $(PKG)_PATCHES  :=
               $(PKG)_SUBDIR   := vvdec-$($(PKG)_VERSION)
@@ -82,7 +93,7 @@ jobs:
               $(PKG)_WEBSITE  := https://github.com/fraunhoferhhi/vvenc
               $(PKG)_DESCR    := Fraunhofer HHI VVC Encoder
               $(PKG)_IGNORE   :=
-              $(PKG)_VERSION  := 1.13.0
+              $(PKG)_VERSION  := ${{ steps.checksums.outputs.vvenc_version }}
               $(PKG)_CHECKSUM := ${{ steps.checksums.outputs.vvenc_checksum }}
               $(PKG)_PATCHES  :=
               $(PKG)_SUBDIR   := vvenc-$($(PKG)_VERSION)
@@ -109,7 +120,7 @@ jobs:
               $(PKG)_WEBSITE  := https://gitlab.com/AOMediaCodec/SVT-AV1
               $(PKG)_DESCR    := Scalable Video Technology for AV1
               $(PKG)_IGNORE   :=
-              $(PKG)_VERSION  := 1.8.0
+              $(PKG)_VERSION  := ${{ steps.checksums.outputs.svt_version }}
               $(PKG)_CHECKSUM := ${{ steps.checksums.outputs.svt_checksum }}
               $(PKG)_PATCHES  :=
               $(PKG)_SUBDIR   := SVT-AV1-v$($(PKG)_VERSION)
