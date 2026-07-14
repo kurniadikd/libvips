@@ -55,6 +55,15 @@ jobs:
           echo "svt_checksum=${SVT_CHECKSUM}" >> $GITHUB_OUTPUT
           echo "svt_version=${SVT_VERSION}" >> $GITHUB_OUTPUT
 
+          # libvips (Image Processing Library)
+          VIPS_TAG=$(curl -s "https://api.github.com/repos/libvips/libvips/releases/latest" | jq -r .tag_name)
+          VIPS_VERSION=${VIPS_TAG#v}
+          echo "Fetching latest libvips version: ${VIPS_VERSION}"
+          curl -L -o vips.tar.xz "https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz"
+          VIPS_CHECKSUM=$(sha256sum vips.tar.xz | awk '{print $1}')
+          echo "vips_checksum=${VIPS_CHECKSUM}" >> $GITHUB_OUTPUT
+          echo "vips_version=${VIPS_VERSION}" >> $GITHUB_OUTPUT
+
       - name: Add vvdec, vvenc and svt MXE recipes
         run: |
           cd build-win64-mxe
@@ -144,7 +153,7 @@ jobs:
               f.write(svt_content)
           EOF
 
-      - name: Patch libheif and vips-web recipes for VVC, SVT, and JXL support
+      - name: Patch libheif, vips-web and vips recipes for VVC, SVT, JXL and latest version support
         run: |
           cd build-win64-mxe
           python3 -c '
@@ -177,11 +186,22 @@ jobs:
           )
           with open("build/plugins/web-deps/vips-web.mk", "w") as f:
               f.write(web_content)
+
+          # 3. Patch vips.mk to use the latest version and checksum
+          with open("build/vips.mk", "r") as f:
+              vips_content = f.read()
+          import re
+          vips_content = re.sub(r"\$\(PKG\)_VERSION  := .*", "$(PKG)_VERSION  := ${{ steps.checksums.outputs.vips_version }}", vips_content)
+          vips_content = re.sub(r"\$\(PKG\)_CHECKSUM := .*", "$(PKG)_CHECKSUM := ${{ steps.checksums.outputs.vips_checksum }}", vips_content)
+          with open("build/vips.mk", "w") as f:
+              f.write(vips_content)
           '
           echo "=== Modified build/libheif.mk ==="
           cat build/libheif.mk
           echo "=== Modified build/plugins/web-deps/vips-web.mk ==="
           cat build/plugins/web-deps/vips-web.mk
+          echo "=== Modified build/vips.mk ==="
+          cat build/vips.mk
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
