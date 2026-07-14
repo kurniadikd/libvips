@@ -133,6 +133,8 @@ jobs:
                       -DBUILD_SHARED_LIBS=OFF \\
                       -DCONFIG_PIC=ON \\
                       -DENABLE_AVX512=OFF \\
+                      -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \\
+                      -DENABLE_LTO=OFF \\
                       '$(SOURCE_DIR)'
                   $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
                   $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
