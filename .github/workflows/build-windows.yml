@@ -144,10 +144,11 @@ jobs:
               f.write(svt_content)
           EOF
 
-      - name: Patch libheif recipe for VVC and SVT support
+      - name: Patch libheif and vips-web recipes for VVC, SVT, and JXL support
         run: |
           cd build-win64-mxe
           python3 -c '
+          # 1. Patch libheif
           with open("build/libheif.mk", "r") as f:
               content = f.read()
           content = content.replace("$(PKG)_DEPS     := cc aom", "$(PKG)_DEPS     := cc aom svt vvdec vvenc")
@@ -162,9 +163,25 @@ jobs:
           )
           with open("build/libheif.mk", "w") as f:
               f.write(content)
+
+          # 2. Patch vips-web to include libjxl
+          with open("build/plugins/web-deps/vips-web.mk", "r") as f:
+              web_content = f.read()
+          web_content = web_content.replace(
+              "$(PKG)_DEPS     := $(vips_DEPS)",
+              "$(PKG)_DEPS     := $(vips_DEPS) libjxl"
+          )
+          web_content = web_content.replace(
+              "printf '\''  \"lcms\": \"$(lcms_VERSION)\",\\n'\''; \\",
+              "printf '\''  \"jxl\": \"$(libjxl_VERSION)\",\\n'\''; \\\n     printf '\''  \"lcms\": \"$(lcms_VERSION)\",\\n'\''; \\"
+          )
+          with open("build/plugins/web-deps/vips-web.mk", "w") as f:
+              f.write(web_content)
           '
           echo "=== Modified build/libheif.mk ==="
           cat build/libheif.mk
+          echo "=== Modified build/plugins/web-deps/vips-web.mk ==="
+          cat build/plugins/web-deps/vips-web.mk
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
