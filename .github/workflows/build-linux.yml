@@ -145,6 +145,10 @@ jobs:
             echo "Error: libjxl.so not found in dist/lib"
             exit 1
           fi
+          if [ ! -f dist/lib/libjpeg.so ] && [ -z "$(ls dist/lib/libjpeg.so* 2>/dev/null)" ]; then
+            echo "Error: libjpeg.so not found in dist/lib"
+            exit 1
+          fi
           
           cp -r /usr/local/include/vips dist/include/
           cp -r /usr/local/avm/* dist/av2/ || true

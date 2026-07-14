@@ -226,19 +226,30 @@ jobs:
           cd build-win64-mxe
           ./build.sh -t x86_64-w64-mingw32.shared vips-web --with-jpegli
 
-      - name: Verify build outputs and JXL support
+      - name: Verify build outputs and codec support
         run: |
           cd build-win64-mxe/packaging
           unzip vips-dev-w64-web-*.zip -d test-vips
-          # 1. Verify libjxl.dll exists in the package
+          # 1. Verify critical codec DLLs exist in the package
           find test-vips -name "libjxl.dll" | grep "libjxl.dll" || (echo "ERROR: libjxl.dll not found!" && exit 1)
+          find test-vips -name "libheif.dll" | grep "libheif.dll" || (echo "ERROR: libheif.dll not found!" && exit 1)
+          find test-vips -name "libwebp.dll" | grep "libwebp.dll" || (echo "ERROR: libwebp.dll not found!" && exit 1)
+          find test-vips -name "libjpeg*.dll" | grep -E "libjpeg" || (echo "ERROR: libjpeg DLL not found!" && exit 1)
           # 2. Verify with Wine if available
           if command -v wine64 &> /dev/null; then
             echo "Running vips.exe -l under Wine..."
             WINEDEBUG=-all wine64 test-vips/vips-dev-*/bin/vips.exe -l | grep jxl || (echo "ERROR: JXL not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine64 test-vips/vips-dev-*/bin/vips.exe -l | grep heif || (echo "ERROR: HEIF not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine64 test-vips/vips-dev-*/bin/vips.exe -l | grep webp || (echo "ERROR: WEBP not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine64 test-vips/vips-dev-*/bin/vips.exe -l | grep jpeg || (echo "ERROR: JPEG not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine64 test-vips/vips-dev-*/bin/vips.exe -l | grep png || (echo "ERROR: PNG not registered in vips!" && exit 1)
           elif command -v wine &> /dev/null; then
             echo "Running vips.exe -l under Wine..."
             WINEDEBUG=-all wine test-vips/vips-dev-*/bin/vips.exe -l | grep jxl || (echo "ERROR: JXL not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine test-vips/vips-dev-*/bin/vips.exe -l | grep heif || (echo "ERROR: HEIF not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine test-vips/vips-dev-*/bin/vips.exe -l | grep webp || (echo "ERROR: WEBP not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine test-vips/vips-dev-*/bin/vips.exe -l | grep jpeg || (echo "ERROR: JPEG not registered in vips!" && exit 1)
+            WINEDEBUG=-all wine test-vips/vips-dev-*/bin/vips.exe -l | grep png || (echo "ERROR: PNG not registered in vips!" && exit 1)
           else
             echo "Wine not found, skipping runtime check."
           fi
