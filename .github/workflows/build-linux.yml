@@ -141,6 +141,10 @@ jobs:
             echo "Error: libheif.so not found in dist/lib"
             exit 1
           fi
+          if [ ! -f dist/lib/libjxl.so ] && [ -z "$(ls dist/lib/libjxl.so* 2>/dev/null)" ]; then
+            echo "Error: libjxl.so not found in dist/lib"
+            exit 1
+          fi
           
           cp -r /usr/local/include/vips dist/include/
           cp -r /usr/local/avm/* dist/av2/ || true

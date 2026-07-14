@@ -198,6 +198,16 @@ jobs:
           vips_content = re.sub(r"\$\(PKG\)_CHECKSUM := .*", "$(PKG)_CHECKSUM := ${{ steps.checksums.outputs.vips_checksum }}", vips_content)
           with open("build/vips.mk", "w") as f:
               f.write(vips_content)
+
+          # 4. Patch overrides.mk to enable JXL in meson options
+          with open("build/plugins/web-deps/overrides.mk", "r") as f:
+              overrides_content = f.read()
+          overrides_content = overrides_content.replace(
+              "-Djpeg-xl=disabled",
+              "-Djpeg-xl=enabled"
+          )
+          with open("build/plugins/web-deps/overrides.mk", "w") as f:
+              f.write(overrides_content)
           '
           echo "=== Modified build/libheif.mk ==="
           cat build/libheif.mk
@@ -205,6 +215,8 @@ jobs:
           cat build/plugins/web-deps/vips-web.mk
           echo "=== Modified build/vips.mk ==="
           cat build/vips.mk
+          echo "=== Modified build/plugins/web-deps/overrides.mk ==="
+          cat build/plugins/web-deps/overrides.mk
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -213,6 +225,23 @@ jobs:
         run: |
           cd build-win64-mxe
           ./build.sh -t x86_64-w64-mingw32.shared vips-web --with-jpegli
+
+      - name: Verify build outputs and JXL support
+        run: |
+          cd build-win64-mxe/packaging
+          unzip vips-dev-w64-web-*.zip -d test-vips
+          # 1. Verify libjxl.dll exists in the package
+          find test-vips -name "libjxl.dll" | grep "libjxl.dll" || (echo "ERROR: libjxl.dll not found!" && exit 1)
+          # 2. Verify with Wine if available
+          if command -v wine64 &> /dev/null; then
+            echo "Running vips.exe -l under Wine..."
+            WINEDEBUG=-all wine64 test-vips/vips-dev-*/bin/vips.exe -l | grep jxl || (echo "ERROR: JXL not registered in vips!" && exit 1)
+          elif command -v wine &> /dev/null; then
+            echo "Running vips.exe -l under Wine..."
+            WINEDEBUG=-all wine test-vips/vips-dev-*/bin/vips.exe -l | grep jxl || (echo "ERROR: JXL not registered in vips!" && exit 1)
+          else
+            echo "Wine not found, skipping runtime check."
+          fi
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
