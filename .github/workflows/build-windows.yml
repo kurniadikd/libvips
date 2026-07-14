@@ -7,6 +7,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: ubuntu-latest
@@ -216,3 +219,15 @@ jobs:
         with:
           name: libvips-windows
           path: build-win64-mxe/packaging/*.zip
+
+      - name: Create or Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Automated Build
+          body: |
+            Automated builds of libvips for Windows and Linux.
+            Updated automatically.
+          draft: false
+          prerelease: false
+          files: build-win64-mxe/packaging/*.zip

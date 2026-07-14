@@ -8,6 +8,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
@@ -78,8 +81,10 @@ jobs:
             ..
           ninja
           sudo ninja install
-          sudo mkdir -p /usr/local/avm/include/aom/config
-          AOM_CONFIG_PATH=$(find . -name "aom_config.h" | head -n 1)
+          AOM_CONFIG_PATH=$(find .. -name "aom_config.h" | head -n 1)
+          if [ -z "$AOM_CONFIG_PATH" ]; then
+            AOM_CONFIG_PATH=$(find / -name "aom_config.h" 2>/dev/null | head -n 1)
+          fi
           echo "Found aom_config.h at: ${AOM_CONFIG_PATH}"
           sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/config/aom_config.h
           sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/aom_config.h
@@ -219,6 +224,18 @@ jobs:
         with:
           name: libvips-linux
           path: libvips-linux.tar.gz
+
+      - name: Create or Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Automated Build
+          body: |
+            Automated builds of libvips for Windows and Linux.
+            Updated automatically.
+          draft: false
+          prerelease: false
+          files: libvips-linux.tar.gz
 """
 pathlib.Path('.github/workflows/build-linux.yml').write_text(content, encoding='utf-8')
 print('Done')
