@@ -42,10 +42,7 @@ jobs:
           cmake -G Ninja             -DCMAKE_C_COMPILER=gcc-13             -DCMAKE_CXX_COMPILER=g++-13             -DCMAKE_BUILD_TYPE=Release             -DBUILD_SHARED_LIBS=0             -DCONFIG_PIC=1             -DENABLE_WERROR=0             -DCMAKE_C_FLAGS="-w"             -DCMAKE_CXX_FLAGS="-w"             -DENABLE_DOCS=0             -DENABLE_EXAMPLES=0             -DENABLE_TESTS=0             -DENABLE_TOOLS=0             -DCMAKE_INSTALL_PREFIX=/usr/local/avm             ..
           ninja
           sudo ninja install
-          AOM_CONFIG_PATH=$(find .. -name "aom_config.h" | head -n 1)
-          if [ -z "$AOM_CONFIG_PATH" ]; then
-            AOM_CONFIG_PATH=$(find / -name "aom_config.h" 2>/dev/null | head -n 1)
-          fi
+          AOM_CONFIG_PATH=$(find . -name "aom_config.h" | head -n 1)
           echo "Found aom_config.h at: ${AOM_CONFIG_PATH}"
           sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/config/aom_config.h
           sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/aom_config.h

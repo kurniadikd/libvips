@@ -81,10 +81,7 @@ jobs:
             ..
           ninja
           sudo ninja install
-          AOM_CONFIG_PATH=$(find .. -name "aom_config.h" | head -n 1)
-          if [ -z "$AOM_CONFIG_PATH" ]; then
-            AOM_CONFIG_PATH=$(find / -name "aom_config.h" 2>/dev/null | head -n 1)
-          fi
+          AOM_CONFIG_PATH=$(find . -name "aom_config.h" | head -n 1)
           echo "Found aom_config.h at: ${AOM_CONFIG_PATH}"
           sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/config/aom_config.h
           sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/aom_config.h
@@ -245,5 +242,5 @@ jobs:
           prerelease: false
           files: libvips-linux.tar.gz
 """
-pathlib.Path('.github/workflows/build-linux.yml').write_text(content, encoding='utf-8')
+pathlib.Path('.github/workflows/build-linux.yml').write_text(content.replace('\r\n', '\n'), encoding='utf-8')
 print('Done')
