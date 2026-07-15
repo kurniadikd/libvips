@@ -220,6 +220,22 @@ jobs:
           echo "=== Modified build/plugins/web-deps/overrides.mk ==="
           cat build/plugins/web-deps/overrides.mk
 
+      - name: Add VVC compression support patch for libvips
+        run: |
+          mkdir -p build-win64-mxe/build/patches
+          cat << 'EOF' > build-win64-mxe/build/patches/vips-2-vvc-compression.patch
+          diff -urN a/libvips/include/vips/foreign.h b/libvips/include/vips/foreign.h
+          --- a/libvips/include/vips/foreign.h
+          +++ b/libvips/include/vips/foreign.h
+          @@ -108,6 +108,7 @@
+           	VIPS_FOREIGN_HEIF_COMPRESSION_AVC = 2,
+           	VIPS_FOREIGN_HEIF_COMPRESSION_JPEG = 3,
+           	VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,
+          +	VIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,
+           	VIPS_FOREIGN_HEIF_COMPRESSION_LAST /*< skip >*/
+           } VipsForeignHeifCompression;
+           EOF
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -438,6 +454,10 @@ jobs:
           git clone https://github.com/libvips/libvips.git
           cd libvips
           git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          
+          # Patch to enable VVC compression support in libvips
+          sed -i 's/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,\n\tVIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,/g' libvips/include/vips/foreign.h
+          
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           sudo apt-get remove -y libjpeg-turbo8-dev libjpeg-dev || true
