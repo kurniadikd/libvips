@@ -82,9 +82,14 @@ jobs:
           ninja
           sudo ninja install
           AOM_CONFIG_PATH=$(find . -name "aom_config.h" | head -n 1)
-          echo "Found aom_config.h at: ${AOM_CONFIG_PATH}"
-          sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/config/aom_config.h
-          sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/aom_config.h
+          if [ -n "$AOM_CONFIG_PATH" ]; then
+            echo "Found aom_config.h at: ${AOM_CONFIG_PATH}"
+            sudo mkdir -p /usr/local/avm/include/aom/config
+            sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/config/aom_config.h
+            sudo cp "${AOM_CONFIG_PATH}" /usr/local/avm/include/aom/aom_config.h
+          else
+            echo "aom_config.h not found, skipping header copy."
+          fi
           cd ../..
 
       - name: Compile vvdec (VVC Decoder)
