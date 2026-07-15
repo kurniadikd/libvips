@@ -226,7 +226,7 @@ jobs:
       - name: Build libvips using MXE
         run: |
           cd build-win64-mxe
-          ./build.sh -t x86_64-w64-mingw32.shared vips-web --with-jpegli
+          ./build.sh -t x86_64-w64-mingw32.shared vips-web --with-jpegli --with-hevc
 
       - name: Verify build outputs and codec support
         run: |
@@ -299,6 +299,7 @@ jobs:
             libjpeg-turbo8-dev \
             libwebp-dev \
             libzstd-dev \
+            libx265-dev \
             libde265-dev \
             libgif-dev \
             libbrotli-dev
