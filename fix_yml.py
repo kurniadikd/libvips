@@ -1,6 +1,6 @@
 import pathlib
 
-content = '''name: Build libvips
+content = r'''name: Build libvips
 
 on:
   schedule:
