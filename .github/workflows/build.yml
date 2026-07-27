@@ -576,10 +576,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            meson ninja-build cmake nasm yasm pkg-config \
+            ninja-build cmake nasm yasm pkg-config \
             autoconf automake libtool \
             libglib2.0-dev libglib2.0-bin \
-            python3 flex bison gettext
+            python3 python3-pip python3-setuptools flex bison gettext
+          pip3 install --upgrade meson --break-system-packages || pip3 install --upgrade meson
 
       - name: Create meson cross-file for Android arm64
         run: |
@@ -592,7 +593,7 @@ jobs:
           ar = '$CROSS_AR'
           ranlib = '$CROSS_RANLIB'
           strip = '$CROSS_STRIP'
-          pkgconfig = 'pkg-config'
+          pkg-config = 'pkg-config'
 
           [built-in options]
           c_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '--sysroot=$TOOLCHAIN/sysroot']
