@@ -533,8 +533,309 @@ jobs:
           tag_name: latest
           name: Latest Automated Build
           body: |
-            Automated builds of libvips for Windows and Linux.
+            Automated builds of libvips for Windows, Linux, and Android.
             Updated automatically.
           draft: false
           prerelease: false
           files: libvips-linux.tar.gz
+
+  build-android:
+    name: Build Android (arm64-v8a)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK
+        run: |
+          NDK_PATH="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-}}"
+          if [ -z "$NDK_PATH" ]; then
+            NDK_PATH=$(find /usr/local/lib/android/sdk/ndk/ -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
+          fi
+          if [ -z "$NDK_PATH" ] || [ ! -d "$NDK_PATH" ]; then
+            echo "ERROR: Android NDK not found!"
+            exit 1
+          fi
+          TOOLCHAIN="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64"
+          PREFIX="$HOME/android-arm64"
+          echo "Using NDK: $NDK_PATH"
+          echo "ANDROID_NDK_HOME=$NDK_PATH"   >> "$GITHUB_ENV"
+          echo "NDK_API=26"                   >> "$GITHUB_ENV"
+          echo "TOOLCHAIN=$TOOLCHAIN"         >> "$GITHUB_ENV"
+          echo "CMAKE_TC=$NDK_PATH/build/cmake/android.toolchain.cmake" >> "$GITHUB_ENV"
+          echo "CROSS_CC=$TOOLCHAIN/bin/aarch64-linux-android26-clang"    >> "$GITHUB_ENV"
+          echo "CROSS_CXX=$TOOLCHAIN/bin/aarch64-linux-android26-clang++" >> "$GITHUB_ENV"
+          echo "CROSS_AR=$TOOLCHAIN/bin/llvm-ar"       >> "$GITHUB_ENV"
+          echo "CROSS_RANLIB=$TOOLCHAIN/bin/llvm-ranlib" >> "$GITHUB_ENV"
+          echo "CROSS_STRIP=$TOOLCHAIN/bin/llvm-strip"   >> "$GITHUB_ENV"
+          echo "PREFIX=$PREFIX"               >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_LIBDIR=$PREFIX/lib/pkgconfig" >> "$GITHUB_ENV"
+          mkdir -p "$PREFIX/lib/pkgconfig" "$PREFIX/include"
+
+      - name: Install host build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build cmake nasm yasm pkg-config \
+            autoconf automake libtool \
+            libglib2.0-dev libglib2.0-bin \
+            python3 flex bison gettext
+
+      - name: Create meson cross-file for Android arm64
+        run: |
+          CROSS_FILE="$GITHUB_WORKSPACE/android-arm64.ini"
+          # Note: variables are expanded here, paths embedded into the ini file
+          cat > "$CROSS_FILE" << EOF
+          [binaries]
+          c = '$CROSS_CC'
+          cpp = '$CROSS_CXX'
+          ar = '$CROSS_AR'
+          ranlib = '$CROSS_RANLIB'
+          strip = '$CROSS_STRIP'
+          pkgconfig = 'pkg-config'
+
+          [built-in options]
+          c_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '--sysroot=$TOOLCHAIN/sysroot']
+          cpp_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '--sysroot=$TOOLCHAIN/sysroot']
+          c_link_args = ['-L$PREFIX/lib', '--sysroot=$TOOLCHAIN/sysroot']
+          cpp_link_args = ['-L$PREFIX/lib', '--sysroot=$TOOLCHAIN/sysroot']
+
+          [properties]
+          sys_root = '$TOOLCHAIN/sysroot'
+          pkg_config_libdir = '$PREFIX/lib/pkgconfig'
+          growing_stack = false
+          have_c99_vsnprintf = true
+          have_c99_snprintf = true
+          have_unix98_printf = true
+
+          [build_machine]
+          system = 'linux'
+          cpu_family = 'x86_64'
+          cpu = 'x86_64'
+          endian = 'little'
+
+          [host_machine]
+          system = 'android'
+          cpu_family = 'aarch64'
+          cpu = 'aarch64'
+          endian = 'little'
+          EOF
+          echo "MESON_CROSS=$CROSS_FILE" >> "$GITHUB_ENV"
+          echo "=== Cross-file contents ==="
+          cat "$CROSS_FILE"
+
+      - name: Build zlib for Android
+        run: |
+          git clone https://github.com/madler/zlib.git && cd zlib
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DZLIB_BUILD_EXAMPLES=OFF ..
+          ninja && ninja install
+          cd ../..
+
+      - name: Build libexpat for Android
+        run: |
+          git clone https://github.com/libexpat/libexpat.git && cd libexpat/expat
+          git checkout $(git tag -l "R_[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DEXPAT_BUILD_DOCS=OFF -DEXPAT_BUILD_TESTS=OFF \
+            -DEXPAT_BUILD_TOOLS=OFF -DEXPAT_BUILD_EXAMPLES=OFF ..
+          ninja && ninja install
+          cd ../../..
+
+      - name: Build libffi for Android
+        run: |
+          git clone https://github.com/libffi/libffi.git && cd libffi
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          autoreconf -fi
+          # Use --host for autotools cross-compile (CC/CXX not exported globally)
+          CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
+          CFLAGS="-fPIC --sysroot=$TOOLCHAIN/sysroot -I$PREFIX/include" \
+          LDFLAGS="-L$PREFIX/lib" \
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix="$PREFIX" \
+            --libdir="$PREFIX/lib" \
+            --enable-shared --disable-static --disable-docs
+          make -j$(nproc) && make install
+          cd ..
+
+      - name: Build glib for Android
+        run: |
+          git clone https://gitlab.gnome.org/GNOME/glib.git && cd glib
+          GLIB_TAG=$(git tag -l "[0-9]*.[0-9]*.[0-9]*" | \
+            grep -v -E "alpha|beta|rc" | sort -V | tail -n 1)
+          git checkout "$GLIB_TAG"
+          echo "Building glib $GLIB_TAG"
+          PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
+          meson setup build_a \
+            --cross-file="$MESON_CROSS" \
+            --buildtype=release \
+            --prefix="$PREFIX" \
+            --libdir=lib \
+            -Dtests=false \
+            -Dinstalled_tests=false \
+            -Ddocumentation=false \
+            -Dnls=disabled \
+            -Dselinux=disabled \
+            -Dxattr=false \
+            -Dlibmount=disabled \
+            -Diconv=libc \
+            -Dforce_posix_threads=true \
+            -Dgio_module_dir="$PREFIX/lib/gio/modules"
+          cd build_a
+          ninja && ninja install
+          cd ../..
+
+      - name: Build libpng for Android
+        run: |
+          git clone https://github.com/glennrp/libpng.git && cd libpng
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DPNG_TESTS=OFF -DPNG_EXECUTABLES=OFF \
+            -DZLIB_LIBRARY="$PREFIX/lib/libz.so" \
+            -DZLIB_INCLUDE_DIR="$PREFIX/include" ..
+          ninja && ninja install
+          cd ../..
+
+      - name: Build libjpeg-turbo for Android
+        run: |
+          git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git && cd libjpeg-turbo
+          git checkout $(git tag -l "[0-9]*.[0-9]*.[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_SHARED=ON -DENABLE_STATIC=OFF \
+            -DWITH_TURBOJPEG=ON ..
+          ninja && ninja install
+          cd ../..
+
+      - name: Build libwebp for Android
+        run: |
+          git clone https://chromium.googlesource.com/webm/libwebp && cd libwebp
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DWEBP_BUILD_ANIM_UTILS=OFF -DWEBP_BUILD_CWEBP=OFF \
+            -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF \
+            -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF \
+            -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_WEBPMUX=OFF \
+            -DWEBP_BUILD_EXTRAS=OFF ..
+          ninja && ninja install
+          cd ../..
+
+      - name: Build libvips for Android
+        run: |
+          git clone https://github.com/libvips/libvips.git && cd libvips
+          VIPS_TAG=$(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          git checkout "$VIPS_TAG"
+          echo "Building libvips $VIPS_TAG"
+          # Patch VVC compression enum (same as linux/windows)
+          sed -i 's/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,\n\tVIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,/g' \
+            libvips/include/vips/foreign.h || true
+          PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
+          meson setup build_a \
+            --cross-file="$MESON_CROSS" \
+            --buildtype=release \
+            --prefix="$PREFIX" \
+            --libdir=lib \
+            -Dpdfium=disabled \
+            -Dhighway=disabled \
+            -Dintrospection=disabled \
+            -Dvapi=disabled \
+            -Dexamples=false \
+            -Dtests=false \
+            -Dheif=disabled \
+            -Djxl=disabled \
+            -Dmagick=disabled \
+            -Dpoppler=disabled \
+            -Dopenslide=disabled \
+            -Dcfitsio=disabled \
+            -Dmatio=disabled \
+            -Dquantizr=disabled \
+            -Dnifti=disabled \
+            -Dimagequant=disabled
+          cd build_a
+          ninja && ninja install
+          cd ../..
+
+      - name: Bundle Android libvips package
+        run: |
+          mkdir -p dist-android/lib dist-android/include
+          echo "=== Copying libraries ==="
+          for lib in libvips \
+                     libglib-2.0 libgobject-2.0 libgio-2.0 \
+                     libgmodule-2.0 libgthread-2.0 \
+                     libffi libexpat libz \
+                     libpng16 libjpeg libturbojpeg \
+                     libwebp libwebpdemux libwebpmux libsharpyuv; do
+            found=$(ls "$PREFIX/lib/${lib}.so"* 2>/dev/null || true)
+            if [ -n "$found" ]; then
+              cp -d "$PREFIX/lib/${lib}.so"* dist-android/lib/
+              echo "  ✓ $lib"
+            else
+              echo "  - $lib (not found, skipped)"
+            fi
+          done
+          # Copy headers
+          cp -r "$PREFIX/include/vips" dist-android/include/ 2>/dev/null || true
+          cp -r "$PREFIX/include/glib-2.0" dist-android/include/ 2>/dev/null || true
+          echo ""
+          echo "=== Final library list ==="
+          ls -lah dist-android/lib/
+          # Validate libvips exists
+          ls dist-android/lib/libvips.so* || { echo "ERROR: libvips.so not found!"; exit 1; }
+          # Strip debug symbols to reduce size
+          for f in dist-android/lib/*.so; do
+            "$CROSS_STRIP" "$f" 2>/dev/null || true
+          done
+          tar -czf libvips-android-arm64.tar.gz dist-android/
+          echo ""
+          echo "=== Archive size ==="
+          ls -lah libvips-android-arm64.tar.gz
+          sha256sum libvips-android-arm64.tar.gz > libvips-android-arm64.tar.gz.sha256
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libvips-android
+          path: |
+            libvips-android-arm64.tar.gz
+            libvips-android-arm64.tar.gz.sha256
+
+      - name: Create or Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Automated Build
+          body: |
+            Automated builds of libvips for Windows, Linux, and Android.
+            Updated automatically.
+          draft: false
+          prerelease: false
+          files: |
+            libvips-android-arm64.tar.gz
+            libvips-android-arm64.tar.gz.sha256
+
