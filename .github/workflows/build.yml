@@ -694,7 +694,6 @@ jobs:
             -Dselinux=disabled \
             -Dxattr=false \
             -Dlibmount=disabled \
-            -Diconv=libc \
             -Dforce_posix_threads=true \
             -Dgio_module_dir="$PREFIX/lib/gio/modules"
           cd build_a
