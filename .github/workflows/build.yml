@@ -674,6 +674,21 @@ jobs:
           make -j$(nproc) && make install
           cd ..
 
+      - name: Build libiconv for Android
+        run: |
+          curl -L -o libiconv.tar.gz "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz"
+          tar xzf libiconv.tar.gz && cd libiconv-1.17
+          CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
+          CFLAGS="-fPIC --sysroot=$TOOLCHAIN/sysroot -I$PREFIX/include" \
+          LDFLAGS="-L$PREFIX/lib" \
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix="$PREFIX" \
+            --libdir="$PREFIX/lib" \
+            --enable-shared --disable-static
+          make -j$(nproc) && make install
+          cd ..
+
       - name: Build glib for Android
         run: |
           git clone https://gitlab.gnome.org/GNOME/glib.git && cd glib
@@ -694,7 +709,7 @@ jobs:
             -Dselinux=disabled \
             -Dxattr=false \
             -Dlibmount=disabled \
-            -Dforce_posix_threads=true \
+            -Diconv=external \
             -Dgio_module_dir="$PREFIX/lib/gio/modules"
           cd build_a
           ninja && ninja install
@@ -856,7 +871,7 @@ jobs:
                      libffi libexpat libz \
                      libpng16 libjpeg libjxl libjxl_threads libjxl_cms \
                      libwebp libwebpdemux libwebpmux libsharpyuv \
-                     libaom libheif; do
+                     libaom libheif libiconv; do
             found=$(ls "$PREFIX/lib/${lib}.so"* 2>/dev/null || true)
             if [ -n "$found" ]; then
               cp -d "$PREFIX/lib/${lib}.so"* dist-android/lib/
