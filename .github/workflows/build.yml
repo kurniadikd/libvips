@@ -655,20 +655,23 @@ jobs:
 
       - name: Build libffi for Android
         run: |
-          git clone https://github.com/libffi/libffi.git && cd libffi
-          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
-          # Use CMake instead of autotools to avoid LT_SYS_SYMBOL_USCORE macro error
-          mkdir build_a && cd build_a
-          cmake -G Ninja \
-            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
-            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
-            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=ON \
-            -DFFI_DISABLE_DOCS=ON \
-            ..
-          ninja && ninja install
-          cd ../..
+          # Download release tarball — it includes pre-generated configure,
+          # so we can skip autoreconf entirely (avoids LT_SYS_SYMBOL_USCORE error)
+          LIBFFI_TAG=$(curl -s "https://api.github.com/repos/libffi/libffi/releases/latest" | jq -r .tag_name)
+          LIBFFI_VER="${LIBFFI_TAG#v}"
+          curl -L -o libffi.tar.gz \
+            "https://github.com/libffi/libffi/releases/download/${LIBFFI_TAG}/libffi-${LIBFFI_VER}.tar.gz"
+          tar xzf libffi.tar.gz && cd "libffi-${LIBFFI_VER}"
+          CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
+          CFLAGS="-fPIC --sysroot=$TOOLCHAIN/sysroot -I$PREFIX/include" \
+          LDFLAGS="-L$PREFIX/lib" \
+          ./configure \
+            --host=aarch64-linux-android \
+            --prefix="$PREFIX" \
+            --libdir="$PREFIX/lib" \
+            --enable-shared --disable-static --disable-docs
+          make -j$(nproc) && make install
+          cd ..
 
       - name: Build glib for Android
         run: |
