@@ -220,19 +220,29 @@ jobs:
 
       - name: Add VVC compression support patch for libvips
         run: |
-          mkdir -p build-win64-mxe/build/patches
-          cat << 'EOF' > build-win64-mxe/build/patches/vips-2-vvc-compression.patch
-          diff -urN a/libvips/include/vips/foreign.h b/libvips/include/vips/foreign.h
-          --- a/libvips/include/vips/foreign.h
-          +++ b/libvips/include/vips/foreign.h
-          @@ -108,6 +108,7 @@
-           	VIPS_FOREIGN_HEIF_COMPRESSION_AVC = 2,
-           	VIPS_FOREIGN_HEIF_COMPRESSION_JPEG = 3,
-           	VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,
-          +	VIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,
-           	VIPS_FOREIGN_HEIF_COMPRESSION_LAST /*< skip >*/
-           } VipsForeignHeifCompression;
-           EOF
+          # Instead of a fragile patch file (line numbers shift between libvips versions),
+          # we use a sed-based post-build injection inside the MXE vips.mk BUILD rule.
+          cd build-win64-mxe
+          python3 - << 'EOF'
+          with open("build/vips.mk", "r") as f:
+              content = f.read()
+          # Inject sed command into the BUILD rule right after the cmake configure line
+          old = "$(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'"
+          new = (
+              "sed -i 's/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,/"
+              "VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,\\\\n\\\\t"
+              "VIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,/g' "
+              "'$(SOURCE_DIR)/libvips/include/vips/foreign.h'\n"
+              "\t" + old
+          )
+          if old in content and new not in content:
+              content = content.replace(old, new, 1)
+              print("VVC patch injected into vips.mk")
+          else:
+              print("WARNING: Could not inject VVC patch - pattern not found or already patched")
+          with open("build/vips.mk", "w") as f:
+              f.write(content)
+          EOF
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -411,7 +421,10 @@ jobs:
         run: |
           git clone --recursive https://github.com/libjxl/libjxl.git
           cd libjxl
-          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          # Pin to v0.10.3 — last stable release before HWY_AVX10_2 was required.
+          # Newer libjxl installs highway headers that reference HWY_AVX10_2
+          # which causes compile errors in libvips on ubuntu-24.04's GCC.
+          git checkout v0.10.3
           git submodule update --init --recursive --jobs 8
           mkdir build && cd build
           cmake -G Ninja .. \
@@ -452,10 +465,10 @@ jobs:
           git clone https://github.com/libvips/libvips.git
           cd libvips
           git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
-          
+
           # Patch to enable VVC compression support in libvips
           sed -i 's/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,\n\tVIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,/g' libvips/include/vips/foreign.h
-          
+
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           sudo apt-get remove -y libjpeg-turbo8-dev libjpeg-dev || true
@@ -463,7 +476,8 @@ jobs:
             --buildtype=release \
             --prefix=/usr/local \
             --libdir=lib \
-            -Dpdfium=disabled
+            -Dpdfium=disabled \
+            -Dhighway=disabled
           cd build_dir
           ninja
           sudo ninja install
