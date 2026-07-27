@@ -759,6 +759,55 @@ jobs:
           ninja && ninja install
           cd ../..
 
+      - name: Build libaom (AV1/AVIF) for Android
+        run: |
+          git clone https://aomedia.googlesource.com/aom && cd aom
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCONFIG_PIC=1 \
+            -DENABLE_TESTS=0 \
+            -DENABLE_DOCS=0 \
+            -DENABLE_EXAMPLES=0 \
+            -DENABLE_TOOLS=0 \
+            -DAOM_TARGET_CPU=arm64 \
+            ..
+          ninja && ninja install
+          cd ../..
+
+      - name: Build libheif (HEIC/AVIF container) for Android
+        run: |
+          git clone https://github.com/strukturag/libheif.git && cd libheif
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DENABLE_PLUGIN_LOADING=OFF \
+            -DWITH_AOM_ENCODER=ON \
+            -DWITH_AOM_DECODER=ON \
+            -DWITH_EXAMPLES=OFF \
+            -DWITH_LIBDE265=OFF \
+            -DWITH_X265=OFF \
+            -DAOM_INCLUDE_DIR="$PREFIX/include" \
+            -DAOM_LIBRARY="$PREFIX/lib/libaom.so" \
+            ..
+          ninja && ninja install
+          # Patch pkg-config for libheif so meson finds it correctly
+          PKG_PC="$PREFIX/lib/pkgconfig/libheif.pc"
+          if [ -f "$PKG_PC" ]; then
+            grep -q 'Libs.private' "$PKG_PC" || echo "Libs.private: -laom" >> "$PKG_PC"
+          fi
+          cd ../..
+
       - name: Build libvips for Android
         run: |
           git clone https://github.com/libvips/libvips.git && cd libvips
@@ -780,7 +829,7 @@ jobs:
             -Dvapi=disabled \
             -Dexamples=false \
             -Dtests=false \
-            -Dheif=disabled \
+            -Dheif=enabled \
             -Djxl=enabled \
             -Dmagick=disabled \
             -Dpoppler=disabled \
@@ -803,7 +852,8 @@ jobs:
                      libgmodule-2.0 libgthread-2.0 \
                      libffi libexpat libz \
                      libpng16 libjpeg libjxl libjxl_threads libjxl_cms \
-                     libwebp libwebpdemux libwebpmux libsharpyuv; do
+                     libwebp libwebpdemux libwebpmux libsharpyuv \
+                     libaom libheif; do
             found=$(ls "$PREFIX/lib/${lib}.so"* 2>/dev/null || true)
             if [ -n "$found" ]; then
               cp -d "$PREFIX/lib/${lib}.so"* dist-android/lib/
