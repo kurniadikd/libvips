@@ -657,18 +657,18 @@ jobs:
         run: |
           git clone https://github.com/libffi/libffi.git && cd libffi
           git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
-          autoreconf -fi
-          # Use --host for autotools cross-compile (CC/CXX not exported globally)
-          CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
-          CFLAGS="-fPIC --sysroot=$TOOLCHAIN/sysroot -I$PREFIX/include" \
-          LDFLAGS="-L$PREFIX/lib" \
-          ./configure \
-            --host=aarch64-linux-android \
-            --prefix="$PREFIX" \
-            --libdir="$PREFIX/lib" \
-            --enable-shared --disable-static --disable-docs
-          make -j$(nproc) && make install
-          cd ..
+          # Use CMake instead of autotools to avoid LT_SYS_SYMBOL_USCORE macro error
+          mkdir build_a && cd build_a
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DFFI_DISABLE_DOCS=ON \
+            ..
+          ninja && ninja install
+          cd ../..
 
       - name: Build glib for Android
         run: |
