@@ -713,20 +713,33 @@ jobs:
           ninja && ninja install
           cd ../..
 
-      - name: Build libjpeg-turbo for Android
+      - name: Build libjxl v0.10.3 with jpegli for Android
         run: |
-          git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git && cd libjpeg-turbo
-          git checkout $(git tag -l "[0-9]*.[0-9]*.[0-9]*" | sort -V | tail -n 1)
+          git clone --recursive https://github.com/libjxl/libjxl.git && cd libjxl
+          # Pin to v0.10.3 — last stable before HWY_AVX10_2 (same as Linux build)
+          git checkout v0.10.3
+          git submodule update --init --recursive --jobs 8
           mkdir build_a && cd build_a
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
             -DCMAKE_BUILD_TYPE=Release \
-            -DENABLE_SHARED=ON -DENABLE_STATIC=OFF \
-            -DWITH_TURBOJPEG=ON ..
+            -DBUILD_SHARED_LIBS=ON \
+            -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \
+            -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \
+            -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \
+            -DJPEGXL_ENABLE_TOOLS=OFF \
+            -DJPEGXL_ENABLE_DOXYGEN=OFF \
+            -DJPEGXL_ENABLE_MANPAGES=OFF \
+            -DJPEGXL_ENABLE_BENCHMARK=OFF \
+            -DJPEGXL_ENABLE_EXAMPLES=OFF \
+            -DJPEGXL_ENABLE_TESTS=OFF \
+            -DJPEGXL_ENABLE_FUZZERS=OFF \
+            ..
           ninja && ninja install
           cd ../..
+
 
       - name: Build libwebp for Android
         run: |
@@ -768,7 +781,7 @@ jobs:
             -Dexamples=false \
             -Dtests=false \
             -Dheif=disabled \
-            -Djxl=disabled \
+            -Djxl=enabled \
             -Dmagick=disabled \
             -Dpoppler=disabled \
             -Dopenslide=disabled \
@@ -789,7 +802,7 @@ jobs:
                      libglib-2.0 libgobject-2.0 libgio-2.0 \
                      libgmodule-2.0 libgthread-2.0 \
                      libffi libexpat libz \
-                     libpng16 libjpeg libturbojpeg \
+                     libpng16 libjpeg libjxl libjxl_threads libjxl_cms \
                      libwebp libwebpdemux libwebpmux libsharpyuv; do
             found=$(ls "$PREFIX/lib/${lib}.so"* 2>/dev/null || true)
             if [ -n "$found" ]; then
