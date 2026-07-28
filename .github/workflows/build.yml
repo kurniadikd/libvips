@@ -692,8 +692,9 @@ jobs:
       - name: Build glib for Android
         run: |
           git clone https://gitlab.gnome.org/GNOME/glib.git && cd glib
-          git checkout 2.80.5
-          echo "Building glib 2.80.5"
+          GLIB_TAG=$(git tag -l "[0-9]*.[0-9]*.[0-9]*" | grep -v -E "alpha|beta|rc" | sort -V | tail -n 1)
+          git checkout "$GLIB_TAG"
+          echo "Building glib $GLIB_TAG"
           PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
           meson setup build_a \
             --cross-file="$MESON_CROSS" \
@@ -707,7 +708,6 @@ jobs:
             -Dselinux=disabled \
             -Dxattr=false \
             -Dlibmount=disabled \
-            -Diconv=external \
             -Dgio_module_dir="$PREFIX/lib/gio/modules"
           cd build_a
           ninja && ninja install
