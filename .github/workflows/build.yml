@@ -754,6 +754,7 @@ jobs:
             -DJPEGXL_ENABLE_EXAMPLES=OFF \
             -DJPEGXL_ENABLE_TESTS=OFF \
             -DJPEGXL_ENABLE_FUZZERS=OFF \
+            -DJPEGXL_ENABLE_SJPEG=OFF \
             ..
           ninja && ninja install
           cd ../..
