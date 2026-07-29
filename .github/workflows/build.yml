@@ -847,7 +847,6 @@ jobs:
             -Dintrospection=disabled \
             -Dvapi=false \
             -Dexamples=false \
-            -Dtests=false \
             -Dheif=enabled \
             -Djxl=enabled \
             -Dmagick=disabled \
