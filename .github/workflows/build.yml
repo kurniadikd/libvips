@@ -676,8 +676,8 @@ jobs:
 
       - name: Build libiconv for Android
         run: |
-          curl -L -o libiconv.tar.gz "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz"
-          tar xzf libiconv.tar.gz && cd libiconv-1.17
+          curl -L -o libiconv.tar.gz "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz"
+          tar xzf libiconv.tar.gz && cd libiconv-1.18
           CC="$CROSS_CC" CXX="$CROSS_CXX" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" \
           CFLAGS="-fPIC --sysroot=$TOOLCHAIN/sysroot -I$PREFIX/include" \
           LDFLAGS="-L$PREFIX/lib" \
