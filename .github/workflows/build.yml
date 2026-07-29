@@ -716,7 +716,7 @@ jobs:
       - name: Build libpng for Android
         run: |
           git clone https://github.com/glennrp/libpng.git && cd libpng
-          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          git checkout v1.6.43
           mkdir build_a && cd build_a
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
@@ -724,7 +724,8 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
             -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
             -DPNG_TESTS=OFF -DPNG_EXECUTABLES=OFF \
-            -DPNG_ARM_NEON=off -Dpng_arm_neon=off -DPNG_HARDWARE_OPTIMIZATIONS=OFF \
+            -DPNG_ARM_NEON=off -DPNG_HARDWARE_OPTIMIZATIONS=off \
+            -DPNG_INTEL_SSE=off -DPNG_POWERPC_VSX=off -DPNG_MIPS_MSA=off \
             -DZLIB_LIBRARY="$PREFIX/lib/libz.so" \
             -DZLIB_INCLUDE_DIR="$PREFIX/include" ..
           ninja && ninja install
