@@ -845,7 +845,7 @@ jobs:
             -Dpdfium=disabled \
             -Dhighway=disabled \
             -Dintrospection=disabled \
-            -Dvapi=disabled \
+            -Dvapi=false \
             -Dexamples=false \
             -Dtests=false \
             -Dheif=enabled \
