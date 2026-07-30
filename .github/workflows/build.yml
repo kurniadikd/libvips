@@ -834,18 +834,7 @@ jobs:
           fi
           # If libheif.pc still doesn't exist, generate a fallback libheif.pc file
           if [ ! -f "$PREFIX/lib/pkgconfig/libheif.pc" ]; then
-            cat > "$PREFIX/lib/pkgconfig/libheif.pc" << EOF
-prefix=$PREFIX
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-
-Name: libheif
-Description: HEIF file format library
-Version: 1.18.2
-Libs: -L\${libdir} -lheif
-Cflags: -I\${includedir}
-EOF
+            printf "prefix=%s\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: libheif\nDescription: HEIF file format library\nVersion: 1.18.2\nLibs: -L\${libdir} -lheif\nCflags: -I\${includedir}\n" "$PREFIX" > "$PREFIX/lib/pkgconfig/libheif.pc"
           fi
           # Patch pkg-config for libheif so meson finds it correctly
           PKG_PC="$PREFIX/lib/pkgconfig/libheif.pc"
