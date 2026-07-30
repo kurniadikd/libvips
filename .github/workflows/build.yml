@@ -950,6 +950,4 @@ jobs:
           prerelease: false
           files: |
             libvips-android-arm64.tar.gz
-            libvips-android-arm64.tar.gz.sha256
-
-text 
+            libvips-android-arm64.tar.gz.sha256 
