@@ -848,7 +848,7 @@ jobs:
             -Dvapi=false \
             -Dexamples=false \
             -Dheif=enabled \
-            -Djxl=enabled \
+            -Djpeg-xl=enabled \
             -Dmagick=disabled \
             -Dpoppler=disabled \
             -Dopenslide=disabled \
