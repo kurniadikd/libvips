@@ -826,9 +826,26 @@ jobs:
           ninja && ninja install
           # Find and copy libheif.pc wherever cmake installed it under $PREFIX
           mkdir -p "$PREFIX/lib/pkgconfig"
+          echo "=== Searching for libheif.pc ==="
+          find "$PREFIX" -name "*heif*" || true
           HEIF_PC_FOUND=$(find "$PREFIX" -name "libheif.pc" | head -n 1)
           if [ -n "$HEIF_PC_FOUND" ] && [ "$HEIF_PC_FOUND" != "$PREFIX/lib/pkgconfig/libheif.pc" ]; then
             cp "$HEIF_PC_FOUND" "$PREFIX/lib/pkgconfig/libheif.pc"
+          fi
+          # If libheif.pc still doesn't exist, generate a fallback libheif.pc file
+          if [ ! -f "$PREFIX/lib/pkgconfig/libheif.pc" ]; then
+            cat > "$PREFIX/lib/pkgconfig/libheif.pc" << EOF
+prefix=$PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libheif
+Description: HEIF file format library
+Version: 1.18.2
+Libs: -L\${libdir} -lheif
+Cflags: -I\${includedir}
+EOF
           fi
           # Patch pkg-config for libheif so meson finds it correctly
           PKG_PC="$PREFIX/lib/pkgconfig/libheif.pc"
