@@ -593,6 +593,7 @@ jobs:
           ar = '$CROSS_AR'
           ranlib = '$CROSS_RANLIB'
           strip = '$CROSS_STRIP'
+          pkgconfig = 'pkg-config'
           pkg-config = 'pkg-config'
 
           [built-in options]
@@ -836,6 +837,7 @@ jobs:
           # Patch VVC compression enum (same as linux/windows)
           sed -i 's/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,\n\tVIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,/g' \
             libvips/include/vips/foreign.h || true
+          PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
           PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
           meson setup build_a \
             --cross-file="$MESON_CROSS" \
