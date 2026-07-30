@@ -858,6 +858,10 @@ jobs:
           # Patch VVC compression enum (same as linux/windows)
           sed -i 's/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,/VIPS_FOREIGN_HEIF_COMPRESSION_AV1 = 4,\n\tVIPS_FOREIGN_HEIF_COMPRESSION_VVC = 5,/g' \
             libvips/include/vips/foreign.h || true
+          mkdir -p "$PREFIX/lib/pkgconfig"
+          echo "=== Copying all *.pc files to $PREFIX/lib/pkgconfig ==="
+          find "$PREFIX" -name "*.pc" -exec cp {} "$PREFIX/lib/pkgconfig/" \; || true
+          ls -la "$PREFIX/lib/pkgconfig/"
           PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
           PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
           meson setup build_a \
