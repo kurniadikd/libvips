@@ -600,8 +600,8 @@ jobs:
           pkg-config = '$WRAPPER'
 
           [built-in options]
-          c_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '--sysroot=$TOOLCHAIN/sysroot']
-          cpp_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '--sysroot=$TOOLCHAIN/sysroot']
+          c_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '-I$PREFIX/include/libheif', '-I$PREFIX/include/libjxl', '--sysroot=$TOOLCHAIN/sysroot']
+          cpp_args = ['-fPIC', '-DANDROID', '-I$PREFIX/include', '-I$PREFIX/include/libheif', '-I$PREFIX/include/libjxl', '--sysroot=$TOOLCHAIN/sysroot']
           c_link_args = ['-L$PREFIX/lib', '--sysroot=$TOOLCHAIN/sysroot']
           cpp_link_args = ['-L$PREFIX/lib', '--sysroot=$TOOLCHAIN/sysroot']
 
@@ -758,8 +758,14 @@ jobs:
             -DJPEGXL_ENABLE_TESTS=OFF \
             -DJPEGXL_ENABLE_FUZZERS=OFF \
             -DJPEGXL_ENABLE_SJPEG=OFF \
+            -DJPEGXL_ENABLE_PLUGINS=OFF \
             ..
           ninja && ninja install
+          # Generate fallback libjxl.pc if cmake omitted it for android
+          mkdir -p "$PREFIX/lib/pkgconfig"
+          if [ ! -f "$PREFIX/lib/pkgconfig/libjxl.pc" ]; then
+            printf "prefix=%s\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: libjxl\nDescription: JPEG XL image format reference implementation\nVersion: 0.10.3\nLibs: -L\${libdir} -ljxl -ljxl_cms\nCflags: -I\${includedir}\n" "$PREFIX" > "$PREFIX/lib/pkgconfig/libjxl.pc"
+          fi
           # Find and copy libjxl.pc wherever cmake installed it under $PREFIX
           mkdir -p "$PREFIX/lib/pkgconfig"
           JXL_PC_FOUND=$(find "$PREFIX" -name "libjxl.pc" | head -n 1)
@@ -946,3 +952,4 @@ jobs:
             libvips-android-arm64.tar.gz
             libvips-android-arm64.tar.gz.sha256
 
+text 
