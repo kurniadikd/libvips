@@ -761,10 +761,13 @@ jobs:
             -DJPEGXL_ENABLE_PLUGINS=OFF \
             ..
           ninja && ninja install
-          # Generate fallback libjxl.pc if cmake omitted it for android
+          # Generate fallback libjxl.pc & libjxl_threads.pc if cmake omitted them for android
           mkdir -p "$PREFIX/lib/pkgconfig"
           if [ ! -f "$PREFIX/lib/pkgconfig/libjxl.pc" ]; then
             printf "prefix=%s\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: libjxl\nDescription: JPEG XL image format reference implementation\nVersion: 0.10.3\nLibs: -L\${libdir} -ljxl -ljxl_cms\nCflags: -I\${includedir}\n" "$PREFIX" > "$PREFIX/lib/pkgconfig/libjxl.pc"
+          fi
+          if [ ! -f "$PREFIX/lib/pkgconfig/libjxl_threads.pc" ]; then
+            printf "prefix=%s\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: libjxl_threads\nDescription: JPEG XL threads implementation\nVersion: 0.10.3\nLibs: -L\${libdir} -ljxl_threads\nCflags: -I\${includedir}\n" "$PREFIX" > "$PREFIX/lib/pkgconfig/libjxl_threads.pc"
           fi
           # Find and copy libjxl.pc wherever cmake installed it under $PREFIX
           mkdir -p "$PREFIX/lib/pkgconfig"
