@@ -824,9 +824,11 @@ jobs:
             -DAOM_LIBRARY="$PREFIX/lib/libaom.so" \
             ..
           ninja && ninja install
-          # Ensure libheif.pc is in $PREFIX/lib/pkgconfig even if cmake placed it in multilib dir
-          if [ ! -f "$PREFIX/lib/pkgconfig/libheif.pc" ] && [ -f "$PREFIX/lib/aarch64-linux-android/pkgconfig/libheif.pc" ]; then
-            cp "$PREFIX/lib/aarch64-linux-android/pkgconfig/libheif.pc" "$PREFIX/lib/pkgconfig/libheif.pc"
+          # Find and copy libheif.pc wherever cmake installed it under $PREFIX
+          mkdir -p "$PREFIX/lib/pkgconfig"
+          HEIF_PC_FOUND=$(find "$PREFIX" -name "libheif.pc" | head -n 1)
+          if [ -n "$HEIF_PC_FOUND" ] && [ "$HEIF_PC_FOUND" != "$PREFIX/lib/pkgconfig/libheif.pc" ]; then
+            cp "$HEIF_PC_FOUND" "$PREFIX/lib/pkgconfig/libheif.pc"
           fi
           # Patch pkg-config for libheif so meson finds it correctly
           PKG_PC="$PREFIX/lib/pkgconfig/libheif.pc"
