@@ -584,14 +584,8 @@ jobs:
 
       - name: Create meson cross-file for Android arm64
         run: |
-          # Create a custom pkg-config wrapper script so Meson's pkg-config calls hit $PREFIX/lib/pkgconfig
           WRAPPER="$GITHUB_WORKSPACE/android-pkg-config"
-          cat > "$WRAPPER" << 'WRAPPER_EOF'
-#!/bin/bash
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
-export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
-exec pkg-config "$@"
-WRAPPER_EOF
+          printf '#!/bin/bash\nexport PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"\nexport PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"\nexec pkg-config "$@"\n' > "$WRAPPER"
           chmod +x "$WRAPPER"
 
           CROSS_FILE="$GITHUB_WORKSPACE/android-arm64.ini"
