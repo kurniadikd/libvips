@@ -891,7 +891,11 @@ jobs:
             -Dmatio=disabled \
             -Dquantizr=disabled \
             -Dnifti=disabled \
-            -Dimagequant=disabled
+            -Dimagequant=disabled \
+            -Dc_args="-fPIC -DANDROID -I$PREFIX/include -I$PREFIX/include/libheif -I$PREFIX/include/libjxl --sysroot=$TOOLCHAIN/sysroot" \
+            -Dcpp_args="-fPIC -DANDROID -I$PREFIX/include -I$PREFIX/include/libheif -I$PREFIX/include/libjxl --sysroot=$TOOLCHAIN/sysroot" \
+            -Dc_link_args="-L$PREFIX/lib --sysroot=$TOOLCHAIN/sysroot" \
+            -Dcpp_link_args="-L$PREFIX/lib --sysroot=$TOOLCHAIN/sysroot"
           cd build_a
           ninja && ninja install
           cd ../..
