@@ -761,6 +761,12 @@ jobs:
             -DJPEGXL_ENABLE_SJPEG=OFF \
             ..
           ninja && ninja install
+          # Find and copy libjxl.pc wherever cmake installed it under $PREFIX
+          mkdir -p "$PREFIX/lib/pkgconfig"
+          JXL_PC_FOUND=$(find "$PREFIX" -name "libjxl.pc" | head -n 1)
+          if [ -n "$JXL_PC_FOUND" ] && [ "$JXL_PC_FOUND" != "$PREFIX/lib/pkgconfig/libjxl.pc" ]; then
+            cp "$JXL_PC_FOUND" "$PREFIX/lib/pkgconfig/libjxl.pc"
+          fi
           cd ../..
 
 
