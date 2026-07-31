@@ -443,7 +443,7 @@ jobs:
         run: |
           git clone https://github.com/strukturag/libheif.git
           cd libheif
-          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          git checkout v1.18.2
           mkdir build_dir && cd build_dir
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           cmake -G Ninja \
