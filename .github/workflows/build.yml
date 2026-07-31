@@ -637,7 +637,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
-            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release \
             -DZLIB_BUILD_EXAMPLES=OFF ..
           ninja && ninja install
           cd ../..
@@ -651,7 +651,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
-            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release \
             -DEXPAT_BUILD_DOCS=OFF -DEXPAT_BUILD_TESTS=OFF \
             -DEXPAT_BUILD_TOOLS=OFF -DEXPAT_BUILD_EXAMPLES=OFF ..
           ninja && ninja install
@@ -659,8 +659,6 @@ jobs:
 
       - name: Build libffi for Android
         run: |
-          # Download release tarball — it includes pre-generated configure,
-          # so we can skip autoreconf entirely (avoids LT_SYS_SYMBOL_USCORE error)
           LIBFFI_TAG=$(curl -s "https://api.github.com/repos/libffi/libffi/releases/latest" | jq -r .tag_name)
           LIBFFI_VER="${LIBFFI_TAG#v}"
           curl -L -o libffi.tar.gz \
@@ -673,7 +671,7 @@ jobs:
             --host=aarch64-linux-android \
             --prefix="$PREFIX" \
             --libdir="$PREFIX/lib" \
-            --enable-shared --disable-static --disable-docs
+            --disable-shared --enable-static --disable-docs
           make -j$(nproc) && make install
           cd ..
 
@@ -688,7 +686,7 @@ jobs:
             --host=aarch64-linux-android \
             --prefix="$PREFIX" \
             --libdir="$PREFIX/lib" \
-            --enable-shared --disable-static
+            --disable-shared --enable-static
           make -j$(nproc) && make install
           cd ..
 
@@ -702,6 +700,7 @@ jobs:
           meson setup build_a \
             --cross-file="$MESON_CROSS" \
             --buildtype=release \
+            --default-library=static \
             --prefix="$PREFIX" \
             --libdir=lib \
             -Dtests=false \
@@ -725,11 +724,11 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
-            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release \
             -DPNG_TESTS=OFF -DPNG_EXECUTABLES=OFF \
             -DPNG_ARM_NEON=off -DPNG_HARDWARE_OPTIMIZATIONS=off \
             -DPNG_INTEL_SSE=off -DPNG_POWERPC_VSX=off -DPNG_MIPS_MSA=off \
-            -DZLIB_LIBRARY="$PREFIX/lib/libz.so" \
+            -DZLIB_LIBRARY="$PREFIX/lib/libz.a" \
             -DZLIB_INCLUDE_DIR="$PREFIX/include" ..
           ninja && ninja install
           cd ../..
@@ -746,7 +745,7 @@ jobs:
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_SHARED_LIBS=OFF \
             -DJPEGXL_INSTALL_JPEGLI_LIBJPEG=ON \
             -DJPEGLI_LIBJPEG_LIBRARY_VERSION=8.2.2 \
             -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION=8 \
@@ -787,7 +786,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
-            -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release \
             -DWEBP_BUILD_ANIM_UTILS=OFF -DWEBP_BUILD_CWEBP=OFF \
             -DWEBP_BUILD_DWEBP=OFF -DWEBP_BUILD_GIF2WEBP=OFF \
             -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF \
@@ -806,7 +805,7 @@ jobs:
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_SHARED_LIBS=OFF \
             -DCONFIG_PIC=1 \
             -DENABLE_TESTS=0 \
             -DENABLE_DOCS=0 \
@@ -820,14 +819,14 @@ jobs:
       - name: Build libheif (HEIC/AVIF container) for Android
         run: |
           git clone https://github.com/strukturag/libheif.git && cd libheif
-          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
+          git checkout v1.18.2
           mkdir build_a && cd build_a
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
             -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM="android-$NDK_API" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_SHARED_LIBS=OFF \
             -DENABLE_PLUGIN_LOADING=OFF \
             -DWITH_AOM_ENCODER=ON \
             -DWITH_AOM_DECODER=ON \
@@ -835,7 +834,7 @@ jobs:
             -DWITH_LIBDE265=OFF \
             -DWITH_X265=OFF \
             -DAOM_INCLUDE_DIR="$PREFIX/include" \
-            -DAOM_LIBRARY="$PREFIX/lib/libaom.so" \
+            -DAOM_LIBRARY="$PREFIX/lib/libaom.a" \
             ..
           ninja && ninja install
           # Find and copy libheif.pc wherever cmake installed it under $PREFIX
@@ -877,6 +876,7 @@ jobs:
             --buildtype=release \
             --prefix="$PREFIX" \
             --libdir=lib \
+            -Ddefault_library=shared \
             -Dpdfium=disabled \
             -Dhighway=disabled \
             -Dintrospection=disabled \
@@ -904,28 +904,11 @@ jobs:
       - name: Bundle Android libvips package
         run: |
           mkdir -p dist-android/lib dist-android/include
-          echo "=== Copying libraries ==="
-          for lib in libvips \
-                     libglib-2.0 libgobject-2.0 libgio-2.0 \
-                     libgmodule-2.0 libgthread-2.0 \
-                     libffi libexpat libz \
-                     libpng16 libjpeg libjxl libjxl_threads libjxl_cms \
-                     libwebp libwebpdemux libwebpmux libsharpyuv \
-                     libaom libheif libiconv; do
-            found=$(ls "$PREFIX/lib/${lib}.so"* 2>/dev/null || true)
-            if [ -z "$found" ]; then
-              found=$(ls "$PREFIX/lib/${lib}"*.so* 2>/dev/null || true)
-            fi
-            if [ -n "$found" ]; then
-              cp -d $PREFIX/lib/${lib}*.so* dist-android/lib/ 2>/dev/null || true
-              echo "  ✓ $lib"
-            else
-              echo "  - $lib (not found, skipped)"
-            fi
-          done
+          echo "=== Copying monolithic libvips.so library ==="
+          cp -d $PREFIX/lib/libvips.so* dist-android/lib/ 2>/dev/null || cp -d $PREFIX/lib/libvips*.so* dist-android/lib/ 2>/dev/null || true
+          
           # Copy headers
           cp -r "$PREFIX/include/vips" dist-android/include/ 2>/dev/null || true
-          cp -r "$PREFIX/include/glib-2.0" dist-android/include/ 2>/dev/null || true
           echo ""
           echo "=== Final library list ==="
           ls -lah dist-android/lib/
