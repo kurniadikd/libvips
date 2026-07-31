@@ -892,6 +892,7 @@ jobs:
             -Dquantizr=disabled \
             -Dnifti=disabled \
             -Dimagequant=disabled \
+            -Dmodules=disabled \
             -Dc_args="-fPIC -DANDROID -I$PREFIX/include --sysroot=$TOOLCHAIN/sysroot" \
             -Dcpp_args="-fPIC -DANDROID -I$PREFIX/include --sysroot=$TOOLCHAIN/sysroot" \
             -Dc_link_args="-L$PREFIX/lib --sysroot=$TOOLCHAIN/sysroot" \
@@ -912,8 +913,11 @@ jobs:
                      libwebp libwebpdemux libwebpmux libsharpyuv \
                      libaom libheif libiconv; do
             found=$(ls "$PREFIX/lib/${lib}.so"* 2>/dev/null || true)
+            if [ -z "$found" ]; then
+              found=$(ls "$PREFIX/lib/${lib}"*.so* 2>/dev/null || true)
+            fi
             if [ -n "$found" ]; then
-              cp -d "$PREFIX/lib/${lib}.so"* dist-android/lib/
+              cp -d $PREFIX/lib/${lib}*.so* dist-android/lib/ 2>/dev/null || true
               echo "  ✓ $lib"
             else
               echo "  - $lib (not found, skipped)"
