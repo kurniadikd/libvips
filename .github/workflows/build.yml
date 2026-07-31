@@ -882,8 +882,8 @@ jobs:
             -Dintrospection=disabled \
             -Dvapi=false \
             -Dexamples=false \
-            -Dheif=enabled \
-            -Djpeg-xl=enabled \
+            -Dheif=disabled \
+            -Djpeg-xl=disabled \
             -Dmagick=disabled \
             -Dpoppler=disabled \
             -Dopenslide=disabled \
