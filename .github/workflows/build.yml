@@ -895,8 +895,8 @@ jobs:
             -Dmodules=disabled \
             -Dc_args="-fPIC -DANDROID -I$PREFIX/include --sysroot=$TOOLCHAIN/sysroot" \
             -Dcpp_args="-fPIC -DANDROID -I$PREFIX/include --sysroot=$TOOLCHAIN/sysroot" \
-            -Dc_link_args="-L$PREFIX/lib --sysroot=$TOOLCHAIN/sysroot" \
-            -Dcpp_link_args="-L$PREFIX/lib --sysroot=$TOOLCHAIN/sysroot"
+            -Dc_link_args="-L$PREFIX/lib -llog -lsharpyuv --sysroot=$TOOLCHAIN/sysroot" \
+            -Dcpp_link_args="-L$PREFIX/lib -llog -lsharpyuv --sysroot=$TOOLCHAIN/sysroot"
           cd build_a
           ninja && ninja install
           cd ../..
