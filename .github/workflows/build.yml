@@ -718,7 +718,7 @@ jobs:
       - name: Build libpng for Android
         run: |
           git clone https://github.com/glennrp/libpng.git && cd libpng
-          git checkout v1.6.43
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           mkdir build_a && cd build_a
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
@@ -819,7 +819,7 @@ jobs:
       - name: Build libheif (HEIC/AVIF container) for Android
         run: |
           git clone https://github.com/strukturag/libheif.git && cd libheif
-          git checkout v1.18.2
+          git checkout $(git tag -l "v[0-9]*" | sort -V | tail -n 1)
           mkdir build_a && cd build_a
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TC" \
